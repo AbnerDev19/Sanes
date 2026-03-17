@@ -1,78 +1,106 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Adiciona uma classe ao body para indicar que o JS está pronto.
-    // Isso evita o "flash" de conteúdo invisível.
-    document.body.classList.add('js-ready');
-
-    // --- 1. EFEITO DO HEADER AO ROLAR A PÁGINA ---
+    const body = document.body;
     const header = document.querySelector('.main-header');
-    if (header) {
-        window.addEventListener('scroll', () => {
-            if (window.scrollY > 50) {
-                header.classList.add('scrolled');
+    const navToggle = document.querySelector('.mobile-nav-toggle');
+    const nav = document.querySelector('.main-nav');
+    const navLinks = document.querySelectorAll('.main-nav a');
+    const revealItems = document.querySelectorAll('.reveal');
+    const carouselTrack = document.getElementById('carouselTrack');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    const updateHeader = () => {
+        if (!header) return;
+        header.classList.toggle('scrolled', window.scrollY > 24);
+    };
+
+    updateHeader();
+    window.addEventListener('scroll', updateHeader, { passive: true });
+
+    const closeMenu = () => {
+        body.classList.remove('menu-open');
+        if (navToggle) {
+            navToggle.setAttribute('aria-expanded', 'false');
+        }
+    };
+
+    const openMenu = () => {
+        body.classList.add('menu-open');
+        if (navToggle) {
+            navToggle.setAttribute('aria-expanded', 'true');
+        }
+    };
+
+    if (navToggle && nav) {
+        navToggle.addEventListener('click', () => {
+            const isOpen = body.classList.contains('menu-open');
+            if (isOpen) {
+                closeMenu();
             } else {
-                header.classList.remove('scrolled');
+                openMenu();
+            }
+        });
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', closeMenu);
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!body.classList.contains('menu-open')) return;
+            const clickedInsideNav = nav.contains(event.target);
+            const clickedToggle = navToggle.contains(event.target);
+            if (!clickedInsideNav && !clickedToggle) {
+                closeMenu();
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeMenu();
             }
         });
     }
 
-    // --- 2. FUNCIONALIDADE DO MENU MOBILE ---
-    const mobileNavToggle = document.querySelector('.mobile-nav-toggle');
-    const body = document.body;
-    if (mobileNavToggle) {
-        mobileNavToggle.addEventListener('click', () => {
-            body.classList.toggle('nav-open');
-        });
-    }
-
-    // --- 3. CONTROLES DO CARROSSEL INTERATIVO ---
-    const carousel = document.querySelector('.carousel');
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-
-    if (carousel && prevBtn && nextBtn) {
-        const updateButtons = () => {
-            // Pequena margem de erro para garantir a detecção do final
-            const maxScrollLeft = carousel.scrollWidth - carousel.clientWidth;
-            prevBtn.disabled = carousel.scrollLeft <= 0;
-            nextBtn.disabled = carousel.scrollLeft >= maxScrollLeft - 5;
-        };
-
-        const scrollCarousel = (direction) => {
-            const itemWidth = carousel.querySelector('.carousel-item').offsetWidth;
-            const scrollAmount = (itemWidth + 30) * direction; // 30 é o 'gap'
-            carousel.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-        };
-
-        nextBtn.addEventListener('click', () => scrollCarousel(1));
-        prevBtn.addEventListener('click', () => scrollCarousel(-1));
-        
-        // Usa um observer para atualizar os botões quando o carrossel é redimensionado
-        new ResizeObserver(updateButtons).observe(carousel);
-        carousel.addEventListener('scroll', updateButtons);
-
-        updateButtons();
-    }
-
-    // --- 4. ANIMAÇÕES DE SCROLL (FADE-IN) ---
-    const fadeElements = document.querySelectorAll('.fade-in');
-    if (fadeElements.length > 0) {
-        const observerOptions = {
-            root: null,
-            rootMargin: '0px',
-            threshold: 0.1
-        };
-
-        const observer = new IntersectionObserver((entries, observer) => {
+    if (revealItems.length) {
+        const observer = new IntersectionObserver((entries, obs) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     entry.target.classList.add('visible');
-                    observer.unobserve(entry.target); // A animação acontece apenas uma vez
+                    obs.unobserve(entry.target);
                 }
             });
-        }, observerOptions);
+        }, { threshold: 0.12 });
 
-        fadeElements.forEach(el => {
-            observer.observe(el);
+        revealItems.forEach(item => observer.observe(item));
+    }
+
+    if (carouselTrack && prevBtn && nextBtn) {
+        const getScrollAmount = () => {
+            const firstCard = carouselTrack.querySelector('.carousel-item');
+            if (!firstCard) return 320;
+
+            const cardWidth = firstCard.getBoundingClientRect().width;
+            const styles = window.getComputedStyle(carouselTrack);
+            const gap = parseFloat(styles.columnGap || styles.gap || 22);
+            return cardWidth + gap;
+        };
+
+        const updateCarouselButtons = () => {
+            const maxScroll = carouselTrack.scrollWidth - carouselTrack.clientWidth;
+            prevBtn.disabled = carouselTrack.scrollLeft <= 5;
+            nextBtn.disabled = carouselTrack.scrollLeft >= maxScroll - 5;
+        };
+
+        prevBtn.addEventListener('click', () => {
+            carouselTrack.scrollBy({ left: -getScrollAmount(), behavior: 'smooth' });
         });
+
+        nextBtn.addEventListener('click', () => {
+            carouselTrack.scrollBy({ left: getScrollAmount(), behavior: 'smooth' });
+        });
+
+        carouselTrack.addEventListener('scroll', updateCarouselButtons, { passive: true });
+        window.addEventListener('resize', updateCarouselButtons);
+        updateCarouselButtons();
     }
 });
