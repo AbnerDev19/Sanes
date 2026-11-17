@@ -76,3 +76,4 @@
 .product-page dt{font-size:14px;font-weight:600;margin-top:18px}
 .product-page dd{margin:4px 0}
 @media(max-width:767px){.product-page-grid{grid-template-columns:minmax(0,1fr);gap:25px}.minimum-filter{width:100%}.minimum-filter select{max-width:none;width:100%;font-size:16px}.product-page-image img{max-height:480px}}
+.art-notice{padding:14px;border:1px solid #b6a26d;border-radius:7px;background:#f7f1df;color:#58451c;font-size:14px;line-height:1.7}

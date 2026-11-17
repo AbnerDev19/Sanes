@@ -47,7 +47,7 @@ for (const width of [320, 360, 390, 430, 768, 1024, 1440]) {
     await expect(page.getByLabel('Quantidade de Garrafa Térmica Munique',{exact:true})).toHaveValue('31');
     await page.getByRole('button',{name:'Continuar',exact:true}).click();
     await page.getByLabel('Seu nome *',{exact:true}).fill('Teste de responsividade');
-    await expect(page.getByRole('button',{name:'Entrar para enviar pedido',exact:true})).toBeVisible();
+    await expect(page.getByRole('button',{name:'Solicitar orçamento pelo WhatsApp',exact:true})).toBeVisible();
     await fits(page);
     await page.getByRole('button',{name:'Fechar',exact:true}).click();
     await page.getByLabel('Buscar produtos').fill('');

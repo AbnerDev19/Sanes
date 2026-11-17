@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import fallback from '../products';
 import { supabase, loadProducts } from './supabase';
-import { cleanCart, mergeCarts } from './commerce';
+import { cleanCart, mergeCarts, combineCartItems } from './commerce';
+const safeCart=(key,products)=>{const items=cleanCart(read(key),products);try{return combineCartItems(items)}catch{return items}};
 const read=(key)=>{try{return JSON.parse(localStorage.getItem(key)||'[]')}catch{return[]}};
 export default function useStore(){
  const [products,setProducts]=useState(fallback),[catalogError,setCatalogError]=useState(''),[revision,setRevision]=useState(0);
  const [session,setSession]=useState(null),[authReady,setAuthReady]=useState(!supabase),[recovery,setRecovery]=useState(false);
- const [cart,setCart]=useState(()=>cleanCart(read('sanes-cart-v1'),fallback));
+ const [cart,setCart]=useState(()=>safeCart('sanes-cart-v1',fallback));
  const [profile,setProfile]=useState({name:'',company:'',phone:'',city:''}),[syncError,setSyncError]=useState(''),[cartOwner,setCartOwner]=useState(null),[staff,setStaff]=useState(false);
  const guestAtLogin=useRef([]),uid=session?.user.id;
  useEffect(()=>{let active=true;if(supabase)loadProducts().then(data=>{if(active){setProducts(data);setCatalogError('')}}).catch(()=>{if(active)setCatalogError('Não foi possível atualizar o catálogo. Tente novamente antes de enviar seu pedido.')});return()=>{active=false}},[revision]);
@@ -14,7 +15,7 @@ export default function useStore(){
  const{data}=supabase.auth.onAuthStateChange((event,next)=>{if(active){setSession(next);setAuthReady(true);if(event==='PASSWORD_RECOVERY')setRecovery(true)}});
  return()=>{active=false;data.subscription.unsubscribe()};},[]);
  useEffect(()=>{if(!authReady)return;let active=true;setCartOwner(null);setSyncError('');setStaff(false);
- if(!uid){const guest=cleanCart(read('sanes-cart-v1'),products);guestAtLogin.current=guest;setCart(guest);setProfile({name:'',company:'',phone:'',city:''});return;}
+ if(!uid){const guest=safeCart('sanes-cart-v1',products);guestAtLogin.current=guest;setCart(guest);setProfile({name:'',company:'',phone:'',city:''});return;}
  const local=cleanCart(read(`sanes-cart-user-${uid}`),products);
  Promise.all([supabase.from('carts').select('items').eq('user_id',uid).maybeSingle(),supabase.from('profiles').select('*').eq('id',uid).maybeSingle(),supabase.from('store_members').select('role').eq('user_id',uid).maybeSingle()]).then(([saved,p,member])=>{
  if(!active)return;if(saved.error||p.error||member.error)throw saved.error||p.error||member.error;

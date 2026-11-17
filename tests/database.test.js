@@ -12,6 +12,7 @@ test('database enforces customer isolation, server prices, minimums and idempote
  create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
  create table storage.objects(id uuid primary key,bucket_id text,name text);alter table storage.objects enable row level security;`);
  await db.exec(await readFile(new URL('../supabase/migrations/202611170001_store.sql',import.meta.url),'utf8'));
+ await db.exec(await readFile(new URL('../supabase/migrations/202611170002_order_contact_validation.sql',import.meta.url),'utf8'));
  const A='00000000-0000-4000-8000-000000000001',B='00000000-0000-4000-8000-000000000002',C='00000000-0000-4000-8000-000000000003';
  await db.query(`insert into auth.users values($1,'a@example.com',now()),($2,'b@example.com',now()),($3,'store@example.com',now())`,[A,B,C]);
  await db.exec(`insert into public.products(id,name,category,min_qty,unit_price) values('SB-001','Garrafa','Térmicos',30,12.50);insert into public.products(id,name,category,active) values('HIDDEN','Inativo','Teste',false);`);
@@ -27,6 +28,9 @@ test('database enforces customer isolation, server prices, minimums and idempote
  const place=(key,items)=>db.query('select public.place_order($1,$2,$3) as result',[key,JSON.stringify(items),JSON.stringify(customer)]);
  await assert.rejects(place('10000000-0000-4000-8000-000000000001',[{...item,qty:1}]),/Quantidade fora/);
  await assert.rejects(place('10000000-0000-4000-8000-000000000002',[{...item,id:'HIDDEN'}]),/não está disponível/);
+ await assert.rejects(db.query('select public.place_order($1,$2,$3)',['10000000-0000-4000-8000-000000000009',JSON.stringify([item]),JSON.stringify({...customer,date:'2000-01-01'})]),/passada/);
+ await assert.rejects(db.query('select public.place_order($1,$2,$3)',['10000000-0000-4000-8000-000000000008',JSON.stringify([item]),JSON.stringify({...customer,phone:'123'})]),/Telefone/);
+ await assert.rejects(db.query('select public.place_order_v1($1,$2,$3)',['10000000-0000-4000-8000-000000000007',JSON.stringify([item]),JSON.stringify(customer)]),/permission denied/);
  const request='10000000-0000-4000-8000-000000000003';
  const order=(await place(request,[item])).rows[0].result;
  assert.equal(Number(order.estimated_total),375);assert.equal(order.customer.email,'a@example.com');assert.equal(order.order_items.length,1);assert.equal(Number(order.order_items[0].unit_price),12.50);
