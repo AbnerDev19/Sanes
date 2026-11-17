@@ -8,17 +8,21 @@
     "build": "vite build",
     "test": "node --test tests/*.test.js",
     "build:pages": "vite build && node scripts/prepare-pages.mjs",
-    "test:responsive": "playwright test"
+    "test:responsive": "playwright test",
+    "catalog:import": "node scripts/import-supabase.mjs",
+    "build:production": "node scripts/check-production.mjs && npm run build:pages"
   },
   "dependencies": {
     "@fontsource-variable/dm-sans": "^5.3.0",
     "@fontsource-variable/manrope": "^5.3.0",
+    "@supabase/supabase-js": "^2.119.0",
     "gsap": "^3.13.0",
     "lucide-react": "^0.468.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.16",
     "@playwright/test": "^1.65.1",
     "vite": "^6.1.0"
   }

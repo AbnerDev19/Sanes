@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+import { mockStore } from './store-mock.js';
+test.beforeEach(async ({page})=>{await mockStore(page)});
 
 async function fits(page) {
   const dimensions = await page.evaluate(() => ({
@@ -37,15 +39,15 @@ for (const width of [320, 360, 390, 430, 768, 1024, 1440]) {
     await fits(page);
     await page.getByLabel('O que você imagina?').fill('Uma personalização para o evento da empresa com uma frase longa e a marca em destaque.');
     if(width<768) expect(await page.getByLabel('O que você imagina?').evaluate(el=>getComputedStyle(el).fontSize)).toBe('16px');
-    await page.getByRole('button',{name:'Adicionar ao orçamento',exact:true}).click();
-    await page.getByRole('button',{name:'Meu orçamento 1',exact:true}).click();
-    await expect(page.getByRole('heading',{name:'Meu orçamento 1',exact:true})).toBeVisible();
+    await page.getByRole('button',{name:'Adicionar ao carrinho',exact:true}).click();
+    await page.getByRole('button',{name:'Meu carrinho 1',exact:true}).click();
+    await expect(page.getByRole('heading',{name:'Meu carrinho 1',exact:true})).toBeVisible();
     await fits(page);
     await page.getByRole('button',{name:'Aumentar quantidade de Garrafa Térmica Munique',exact:true}).click();
     await expect(page.getByLabel('Quantidade de Garrafa Térmica Munique',{exact:true})).toHaveValue('31');
     await page.getByRole('button',{name:'Continuar',exact:true}).click();
     await page.getByLabel('Seu nome *',{exact:true}).fill('Teste de responsividade');
-    await expect(page.getByRole('button',{name:'Solicitar pelo WhatsApp',exact:true})).toBeVisible();
+    await expect(page.getByRole('button',{name:'Entrar para enviar pedido',exact:true})).toBeVisible();
     await fits(page);
     await page.getByRole('button',{name:'Fechar',exact:true}).click();
     await page.getByLabel('Buscar produtos').fill('');
