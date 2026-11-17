@@ -68,3 +68,16 @@ O workflow de CI valida testes e build e disponibiliza o pacote compilado como a
 ### Títulos React Bits
 
 Os componentes originais dos anexos agora estão ativos: `StrokeText` desenha e preenche o título “Sua marca.” (com redesenho ao passar o mouse), `TechText` anima “Escolhas que marcam.” com montagem e contornos interativos, e `GradientText` mantém o gradiente animado de “presente.” e da seção de personalização. Os componentes respeitam a preferência de movimento reduzido.
+
+## Responsividade
+
+As regras de adaptação estão em `src/responsive.css`: menu de celular/tablet abaixo de 1024 px, seções empilhadas abaixo de 768 px, catálogo em duas colunas no celular e uma coluna até 380 px. Formulários usam fonte de 16 px no celular, botões principais têm área de toque de pelo menos 44 px e os painéis respeitam a altura dinâmica e as áreas seguras da tela.
+
+Validação automatizada do catálogo, busca, menu, personalização, quantidade e formulário do orçamento em 320, 360, 390, 430, 768, 1024 e 1440 px:
+
+```sh
+npx playwright install chromium
+npm run test:responsive
+```
+
+O runner local usa `/usr/bin/chromium` quando disponível; em outras máquinas, informe `PLAYWRIGHT_CHROMIUM_EXECUTABLE` ou execute com `CI=true` para usar o navegador instalado pelo Playwright. Os testes não enviam mensagens pelo WhatsApp.
