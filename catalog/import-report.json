@@ -1,0 +1,24 @@
+{
+  "documents": [
+    {
+      "name": "Catalago Lançamentos.pdf",
+      "status": "extracted",
+      "pages": 25,
+      "product_records": 24
+    },
+    {
+      "name": "Sanes Brindes - SUGESTÕES DE BRINDES 2026.pdf",
+      "status": "pending",
+      "reason": "Upload exceeds 32 MiB transfer limit; not read or imported."
+    }
+  ],
+  "legacy_products": 103,
+  "new_products": 8,
+  "merged_products": 111,
+  "prices_available": false,
+  "notes": [
+    "No prices were invented.",
+    "Legacy minimums are preserved from the original code; new minimums require confirmation.",
+    "Photos reproduce supplied catalog pages; no logo was altered."
+  ]
+}

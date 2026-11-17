@@ -1,0 +1,10 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {cleanCart,mergeCarts,cartTotals,orderContactMessage} from '../src/lib/commerce.js';
+const products=[{id:'A',nome:'Garrafa',min:30,unit_price:12.5},{id:'B',nome:'Caneta',min:50,unit_price:null}];
+const item={id:'A',name:'Forged',key:'guest-key',qty:30,color:'Azul',method:'Laser',text:'Logo'};
+test('guest merge preserves customizations without duplicating the same cart row',()=>{const merged=mergeCarts([item],[item,{...item,key:'other',text:'Outro logo'}],products);assert.equal(merged.length,2);assert.equal(merged[0].name,'Garrafa');assert.equal(merged[1].text,'Outro logo');assert.equal(cleanCart([{...item,qty:1},{...item,id:'not-found'},{...item,qty:100001}],products).length,0)});
+test('a quote is not displayed as a zero-valued purchase',()=>{assert.deepEqual(cartTotals([item],products),{units:30,total:375});assert.equal(cartTotals([item,{...item,id:'B',qty:50}],products).total,null);assert.equal(cartTotals([],products).total,null)});
+test('store contact references the stored order and preserves selected details',()=>{const message=orderContactMessage({id:'order-id',number:42,customer:{name:'Ana',email:'ana@example.com',phone:'61999990000',city:'Brasília'},order_items:[{product_id:'A',product_name:'Garrafa',quantity:30,color:'Azul',method:'Laser',details:'Logo',art_name:'arte.pdf'}]});for(const text of ['#42','order-id','ana@example.com','30','Azul','Laser','arte.pdf'])assert.ok(message.includes(text));assert.ok(!message.includes('undefined'))});
+
+import {assertPublicKey}from'../src/lib/publicConfig.js';
+test('browser builds reject privileged and user-session keys',()=>{assert.doesNotThrow(()=>assertPublicKey('sb_publishable_test'));assert.throws(()=>assertPublicKey('sb_secret_test'),/privileged/);const jwt=role=>'header.'+Buffer.from(JSON.stringify({role})).toString('base64url')+'.signature';assert.throws(()=>assertPublicKey(jwt('service_role')),/privileged/);assert.throws(()=>assertPublicKey(jwt('authenticated')),/privileged/);assert.doesNotThrow(()=>assertPublicKey(jwt('anon')))});
