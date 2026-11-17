@@ -1,2 +1,9 @@
 import { defineConfig } from 'vite';
-export default defineConfig({ esbuild: { jsx: 'automatic' } });
+
+export default defineConfig({
+  root: 'app',
+  base: './',
+  publicDir: '../public',
+  esbuild: { jsx: 'automatic' },
+  build: { outDir: '../dist', emptyOutDir: true },
+});

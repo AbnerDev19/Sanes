@@ -41,3 +41,26 @@ gh repo create AbnerDev19/sanes-brindes --private --source . --remote github --p
 ```
 
 Não incluir node_modules, dist, credenciais ou arquivos .env.
+
+## Publicação no GitHub Pages
+
+O código-fonte HTML fica em `app/index.html`. O `index.html` da raiz e a pasta `assets/` são a versão compilada para o GitHub Pages, que está configurado para publicar a branch `main` na raiz.
+
+Depois de editar o código:
+
+```sh
+npm ci
+npm test
+npm run build:pages
+git add app src public scripts package.json package-lock.json vite.config.js index.html assets .nojekyll
+git commit -m "Atualiza catálogo"
+git push
+```
+
+Use `npm run dev` para desenvolvimento. Não edite os arquivos gerados em `assets/` nem o `index.html` da raiz manualmente. `base: './'` e `import.meta.env.BASE_URL` mantêm JS, CSS e imagens acessíveis em `/Sanes/` e em outras pastas. A integração atual não permite alterar Settings → Pages, por isso esta estrutura preserva a publicação existente sem exigir uma mudança manual nas configurações.
+
+O workflow de CI valida testes e build e disponibiliza o pacote compilado como artifact; a publicação atual ocorre pelo push dos arquivos gerados.
+
+## Movimento e scroll reveal
+
+`useScrollReveal` revela cartões e seções ao entrarem na tela, com pequeno intervalo entre os produtos. Novos resultados de filtros e do botão de carregar mais também são observados. Hero com AnimatedContent e gradiente, faíscas nos cliques, realce dos cartões e entrada de itens do carrinho completam as animações. A preferência de movimento reduzido é respeitada. O reveal mantém o conteúdo visível quando as APIs de animação não estão disponíveis.
