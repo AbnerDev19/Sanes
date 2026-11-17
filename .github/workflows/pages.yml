@@ -1,0 +1,46 @@
+name: Build and deploy Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_WHATSAPP: ${{ vars.VITE_WHATSAPP }}
+      VITE_SITE_URL: ${{ vars.VITE_SITE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build:pages
+      - name: Check committed build when legacy Pages is in use
+        if: vars.PAGES_ACTIONS_ENABLED != 'true'
+        run: git diff --exit-code -- index.html assets/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+  deploy:
+    if: vars.PAGES_ACTIONS_ENABLED == 'true'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy fresh build
+        id: deployment
+        uses: actions/deploy-pages@v4

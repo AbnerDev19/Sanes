@@ -39,3 +39,9 @@ O build de produção exige as configurações públicas reais e recusa publicar
 - `app/index.html`: HTML fonte. O `index.html` da raiz e `assets/` são gerados para o Pages.
 
 O carrinho de visitante é separado dos carrinhos das contas. O pedido é salvo no banco antes de oferecer o contato pelo WhatsApp. Artes selecionadas são referências de nome; o arquivo é anexado pelo cliente na conversa com a loja. Valores, arte, frete, prazo e pagamento são confirmados pela equipe.
+
+### Publicação automática no Pages
+
+O workflow `.github/workflows/pages.yml` compila o código atual e publica `dist/` quando a variável do repositório `PAGES_ACTIONS_ENABLED` é `true`. Para ativar: em **Settings → Pages → Source**, selecione **GitHub Actions**, e em **Settings → Secrets and variables → Actions → Variables**, defina `PAGES_ACTIONS_ENABLED=true`. As variáveis públicas opcionais são `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_WHATSAPP` e `VITE_SITE_URL`; nunca use uma chave privilegiada.
+
+A integração desta conversa recebe HTTP 403 ao tentar alterar a configuração do Pages. Enquanto o modo legado continuar ativo, o workflow verifica que `index.html` e `assets/` correspondem ao build atual, para impedir divergências silenciosas. `npm run build:pages` atualiza esses arquivos para publicação legada.
