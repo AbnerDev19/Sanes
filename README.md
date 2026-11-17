@@ -81,3 +81,5 @@ npm run test:responsive
 ```
 
 O runner local usa `/usr/bin/chromium` quando disponível; em outras máquinas, informe `PLAYWRIGHT_CHROMIUM_EXECUTABLE` ou execute com `CI=true` para usar o navegador instalado pelo Playwright. Os testes não enviam mensagens pelo WhatsApp.
+
+As fontes DM Sans e Manrope são distribuídas junto com o site via Fontsource, com licenças OFL em `public/assets/font-licenses/`. O carregamento da interface não depende do Google Fonts.
