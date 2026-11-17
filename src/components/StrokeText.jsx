@@ -133,7 +133,16 @@ const StrokeText = ({
     measure();
     document.fonts?.ready?.then(measure).catch(() => {});
 
-    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    // The SVG's own height changes after measuring. Observing that height can
+    // create a feedback loop from fractional SVG text metrics in Chromium.
+    // Re-measure only for a real width change; font readiness is handled above.
+    let measuredWidth = root.getBoundingClientRect().width;
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(entries => {
+      const width = entries[0]?.contentRect.width ?? measuredWidth;
+      if (Math.abs(width - measuredWidth) < 0.5) return;
+      measuredWidth = width;
+      measure();
+    });
     observer?.observe(root);
 
     return () => {
