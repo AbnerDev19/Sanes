@@ -62,3 +62,17 @@
 .product-category,.footer-bottom,.image-note,.image-caption{font-size:12px}
 .modal-content label small,.art-bottom{color:var(--muted)}
 .product-image-button{width:100%;height:100%;min-height:0;padding:0;display:grid;place-items:center}
+.photo-placeholder{width:100%;height:100%;min-height:160px;background:#eeeee9;color:#62665a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;border-radius:8px;font-size:14px}
+.product-capacity{display:block;color:var(--muted);font-size:12px;line-height:1.6;margin-bottom:8px}
+.product-info h3 a{display:inline-flex;align-items:center;min-height:44px}
+.minimum-filter{font-size:12px;color:var(--muted);display:grid;gap:5px}
+.minimum-filter select{min-height:44px;border:1px solid var(--line);border-radius:6px;background:white;padding:8px;font-size:14px;max-width:200px}
+.product-page{padding-block:35px 70px}
+.product-page-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:50px;margin-top:25px}
+.product-page-image{min-width:0;background:#f0eee8;border-radius:12px;padding:20px;display:grid;place-items:center}
+.product-page-image img{width:100%;height:auto;max-height:640px;object-fit:contain}
+.product-page h1{font-family:'Manrope Variable',sans-serif;font-size:clamp(28px,4vw,42px);line-height:1.2;letter-spacing:-1px;overflow-wrap:anywhere}
+.product-page p,.product-page dd{font-size:16px;line-height:1.8;color:var(--muted)}
+.product-page dt{font-size:14px;font-weight:600;margin-top:18px}
+.product-page dd{margin:4px 0}
+@media(max-width:767px){.product-page-grid{grid-template-columns:minmax(0,1fr);gap:25px}.minimum-filter{width:100%}.minimum-filter select{max-width:none;width:100%;font-size:16px}.product-page-image img{max-height:480px}}
