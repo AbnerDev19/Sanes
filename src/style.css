@@ -13,3 +13,12 @@
 @keyframes cart-arrive{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes gentle-spark{0%,100%{transform:rotate(-8deg) scale(.95)}50%{transform:rotate(8deg) scale(1.12)}}
 @media(prefers-reduced-motion:reduce){.cart-item,.cart-drawer form,.floating-note .note-icon svg{animation:none}}
+
+/* Original React Bits title components supplied with the project. */
+.hero-stroke{display:block;width:100%;max-width:430px;margin-bottom:5px}
+.hero-stroke .stroke-text__svg{margin-left:0;max-width:100%}
+.hero-rest{display:block}
+.tech-heading{width:440px;max-width:100%;height:66px;margin:7px 0 0;letter-spacing:normal}
+.tech-heading .tech-text{height:100%}
+@media(max-width:1000px){.hero-stroke{max-width:350px}}
+@media(max-width:700px){.hero-stroke{max-width:345px}.tech-heading{width:390px;height:63px}}

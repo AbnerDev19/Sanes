@@ -64,3 +64,7 @@ O workflow de CI valida testes e build e disponibiliza o pacote compilado como a
 ## Movimento e scroll reveal
 
 `useScrollReveal` revela cartões e seções ao entrarem na tela, com pequeno intervalo entre os produtos. Novos resultados de filtros e do botão de carregar mais também são observados. Hero com AnimatedContent e gradiente, faíscas nos cliques, realce dos cartões e entrada de itens do carrinho completam as animações. A preferência de movimento reduzido é respeitada. O reveal mantém o conteúdo visível quando as APIs de animação não estão disponíveis.
+
+### Títulos React Bits
+
+Os componentes originais dos anexos agora estão ativos: `StrokeText` desenha e preenche o título “Sua marca.” (com redesenho ao passar o mouse), `TechText` anima “Escolhas que marcam.” com montagem e contornos interativos, e `GradientText` mantém o gradiente animado de “presente.” e da seção de personalização. Os componentes respeitam a preferência de movimento reduzido.
