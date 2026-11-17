@@ -18,7 +18,7 @@ for (const width of [320, 360, 390, 430, 768, 1024, 1440]) {
     await page.goto('/');
     await expect(page.getByRole('heading',{level:1})).toBeVisible();
     await expect(page.locator('.stroke-text__svg')).toBeVisible();
-    await page.evaluate(()=>document.fonts.ready);
+    await expect.poll(() => page.evaluate(() => document.fonts.status), { message: 'Local fonts finish loading' }).toBe('loaded');
     await fits(page);
     if(width < 1024) {
       const menu=page.getByRole('button',{name:'Abrir menu'});
@@ -51,7 +51,9 @@ for (const width of [320, 360, 390, 430, 768, 1024, 1440]) {
     await page.getByLabel('Buscar produtos').fill('');
     await page.locator('#contato').scrollIntoViewIfNeeded();
     await fits(page);
-    await page.screenshot({path:testInfo.outputPath(`sanes-${width}.png`), fullPage:true});
+    if (process.env.CAPTURE_SCREENSHOTS === '1') {
+      await page.screenshot({path:testInfo.outputPath(`sanes-${width}.png`), fullPage:true, animations:'disabled', timeout:10000});
+    }
     expect(errors).toEqual([]);
   });
 }
