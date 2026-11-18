@@ -13,7 +13,7 @@
 }
 
 .gradient-text--border::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   padding: var(--gt-border);
@@ -55,4 +55,3 @@
   pointer-events: none;
   user-select: none;
 }
-

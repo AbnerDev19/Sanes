@@ -1,95 +1,704 @@
-import React,{useState,useEffect,useRef,useMemo} from 'react';
-import{createRoot}from'react-dom/client';
-import{ArrowUpRight,ArrowRight,ShoppingBag,Search,X,Plus,Minus,Check,ChevronDown,Package,Truck,ShieldCheck,Sparkles,Menu,SlidersHorizontal,MessageCircle,Download,Upload,Trash2,ArrowLeft,UserRound}from'lucide-react';
-import AnimatedContent from './components/AnimatedContent';
-import GradientText from './components/GradientText';
-import StrokeText from './components/StrokeText';
-import TechText from './components/TechText';
-import ClickSpark from './components/ClickSpark';
-import useStore from './lib/useStore';
-import IMG from './components/ProductImage';
-import ProductPage from './components/ProductPage';
-import {CATEGORIES,filterCatalog,productHash,productIdFromHash} from './lib/catalog';
-import { supabase, money } from './lib/supabase';
-import { cartTotals, orderContactMessage, combineCartItems } from './lib/commerce';
-import AuthPanel from './components/AuthPanel';
-import AccountPanel from './components/AccountPanel';
-import useScrollReveal from './components/useScrollReveal';
-import useReducedMotion from './lib/useReducedMotion';
-import{validateQuantity,makeMessage}from'./order';
-import {WHATSAPP as WA} from './config';
-import{contactError,formatBrazilianPhone,todayBrazil}from'./lib/checkout';
-import '@fontsource-variable/dm-sans';
-import '@fontsource-variable/manrope';
-import './style.css';
-import './responsive.css';
-import './commerce.css';
+import { useState, useEffect, useRef, useMemo } from "react";
+import { createRoot } from "react-dom/client";
+import {
+  Search,
+  X,
+  Plus,
+  Check,
+  ChevronDown,
+  SlidersHorizontal,
+  ShieldCheck,
+  Sparkles,
+  Package,
+  Truck,
+} from "lucide-react";
+import ClickSpark from "./components/ClickSpark";
+import TechText from "./components/TechText";
+import Header from "./components/Header";
+import Hero from "./components/Hero";
+import Footer from "./components/Footer";
+import MarketingSections from "./components/MarketingSections";
+import ProductCard from "./components/ProductCard";
+import ProductModal from "./components/ProductModal";
+import CartDrawer from "./components/CartDrawer";
+import ProductPage from "./components/ProductPage";
+import AuthPanel from "./components/AuthPanel";
+import AccountPanel from "./components/AccountPanel";
+import useStore from "./lib/useStore";
+import { CATEGORIES, filterCatalog, productIdFromHash } from "./lib/catalog";
+import { supabase } from "./lib/supabase";
+import { cartTotals, combineCartItems } from "./lib/commerce";
+import useScrollReveal from "./components/useScrollReveal";
+import useReducedMotion from "./lib/useReducedMotion";
+import { validateQuantity, makeMessage } from "./order";
+import { WHATSAPP as WA } from "./config";
+import { contactError, formatBrazilianPhone } from "./lib/checkout";
+import "@fontsource-variable/dm-sans";
+import "@fontsource-variable/manrope";
+import "./style.css";
+import "./responsive.css";
+import "./commerce.css";
+const groups = ["Todos os produtos", ...CATEGORIES];
 
-const groups=['Todos os produtos',...CATEGORIES];
-function Brand(){return <a className="brand" href="#inicio" aria-label="Sanes Brindes, início"><svg width="32" height="43" viewBox="0 0 40 54" aria-hidden="true"><defs><linearGradient id="gold" x2="1" y2="1"><stop stopColor="#a17a19"/><stop offset=".5" stopColor="#ffcf25"/><stop offset="1" stopColor="#d1a524"/></linearGradient></defs><path d="M38 0C11 6 1 10 5 23c2 7 23 13 24 18C22 43 6 45 2 54c29-5 37-11 33-23C32 23 11 18 10 14 26 13 36 10 38 0Z" fill="url(#gold)"/></svg><span>SANES{' '}<span className="brand-sub">BRINDES</span></span></a>}
-function App(){
-const reducedMotion=useReducedMotion();
-const[productId,setProductId]=useState(()=>productIdFromHash(location.hash));
-const[maxMinimum,setMaxMinimum]=useState('');
-useEffect(()=>{const update=()=>{setProductId(productIdFromHash(location.hash))};window.addEventListener('hashchange',update);return()=>window.removeEventListener('hashchange',update)},[]);
-useEffect(()=>{if(productId)window.scrollTo(0,0)},[productId]);
-const {products,session,authReady,recovery,setRecovery,cart,setCart,profile,staff,syncError,catalogError,retry,canOrder}=useStore();
-const[guestContact,setGuestContact]=useState('');
-const [accountView,setAccountView]=useState(null),[submitting,setSubmitting]=useState(false),[checkoutError,setCheckoutError]=useState(''),[placedOrder,setPlacedOrder]=useState(null);
-const minimumFor=id=>products.find(p=>p.id===id)?.min||1;
-useEffect(()=>{if(recovery){setModal(null);setCartOpen(false);setAccountView('auth')}},[recovery]);
-useEffect(()=>{setPlacedOrder(null);setGuestContact('');setCheckoutError('');setCustomer({name:'',company:'',email:'',phone:'',city:'',date:'',notes:''})},[session?.user.id]);
-useEffect(()=>{if(session)setCustomer(c=>({...c,name:c.name||profile.name||session.user.user_metadata?.name||'',company:c.company||profile.company||'',email:session.user.email||'',phone:c.phone||formatBrazilianPhone(profile.phone||''),city:c.city||profile.city||''}));},[session?.user.id,profile]);
+function App() {
+  const reducedMotion = useReducedMotion();
+  const [productId, setProductId] = useState(() =>
+    productIdFromHash(location.hash),
+  );
+  const [maxMinimum, setMaxMinimum] = useState("");
+  useEffect(() => {
+    const update = () => {
+      setProductId(productIdFromHash(location.hash));
+    };
+    window.addEventListener("hashchange", update);
+    return () => window.removeEventListener("hashchange", update);
+  }, []);
+  useEffect(() => {
+    if (productId) window.scrollTo(0, 0);
+  }, [productId]);
+  const {
+    products,
+    session,
+    authReady,
+    recovery,
+    setRecovery,
+    cart,
+    setCart,
+    profile,
+    staff,
+    syncError,
+    catalogError,
+    retry,
+    canOrder,
+  } = useStore();
+  const [guestContact, setGuestContact] = useState("");
+  const [accountView, setAccountView] = useState(null),
+    [submitting, setSubmitting] = useState(false),
+    [checkoutError, setCheckoutError] = useState(""),
+    [placedOrder, setPlacedOrder] = useState(null);
+  const minimumFor = (id) => products.find((p) => p.id === id)?.min || 1;
+  useEffect(() => {
+    if (recovery) {
+      setModal(null);
+      setCartOpen(false);
+      setAccountView("auth");
+    }
+  }, [recovery]);
+  useEffect(() => {
+    setPlacedOrder(null);
+    setGuestContact("");
+    setCheckoutError("");
+    setCustomer({
+      name: "",
+      company: "",
+      email: "",
+      phone: "",
+      city: "",
+      date: "",
+      notes: "",
+    });
+  }, [session?.user.id]);
+  useEffect(() => {
+    if (session)
+      setCustomer((c) => ({
+        ...c,
+        name: c.name || profile.name || session.user.user_metadata?.name || "",
+        company: c.company || profile.company || "",
+        email: session.user.email || "",
+        phone: c.phone || formatBrazilianPhone(profile.phone || ""),
+        city: c.city || profile.city || "",
+      }));
+  }, [session?.user.id, profile]);
 
-const[category,setCategory]=useState(groups[0]),[query,setQuery]=useState(''),[limit,setLimit]=useState(9),[sort,setSort]=useState('featured'),[mobile,setMobile]=useState(false),[modal,setModal]=useState(null),[cartOpen,setCartOpen]=useState(false),[step,setStep]=useState(1),[toast,setToast]=useState(''),[customer,setCustomer]=useState({name:'',company:'',email:'',phone:'',city:'',date:'',notes:''});
-const[qty,setQty]=useState(30),[color,setColor]=useState('A definir'),[method,setMethod]=useState('A definir com a equipe'),[text,setText]=useState(''),[art,setArt]=useState(null),[error,setError]=useState('');
-const dialog=useRef(null),trigger=useRef(null);
-useEffect(()=>{const close=e=>{if(e.key==="Escape")setMobile(false)};const desktop=window.matchMedia("(min-width: 1024px)");const reset=()=>setMobile(false);document.addEventListener("keydown",close);desktop.addEventListener("change",reset);return()=>{document.removeEventListener("keydown",close);desktop.removeEventListener("change",reset)}},[]);
-useScrollReveal([category,query,limit,sort]);
-useEffect(()=>{if(!toast)return;const t=setTimeout(()=>setToast(''),3000);return()=>clearTimeout(t)},[toast]);
-useEffect(()=>{if(!modal&&!cartOpen&&!accountView)return;trigger.current=document.activeElement;document.body.style.overflow='hidden';setTimeout(()=>{const root=dialog.current;const field=root?.querySelector('input:not([type="hidden"]):not([disabled]),select:not([disabled]),textarea:not([disabled])');(field||root?.querySelector('button:not([disabled]),[tabindex="0"]'))?.focus()},10);const key=e=>{if(e.key==='Escape'){setModal(null);setCartOpen(false);setAccountView(null)}if(e.key==='Tab'){const nodes=dialog.current?.querySelectorAll('button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),a[href],[tabindex]:not([tabindex="-1"])');if(!nodes?.length)return;const visible=Array.from(nodes).filter(node=>node.getClientRects().length&&!node.closest('[aria-hidden="true"]'));const first=visible[0],last=visible[visible.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}};document.addEventListener('keydown',key);return()=>{document.body.style.overflow='';document.removeEventListener('keydown',key);trigger.current?.focus()}},[!!modal,cartOpen,accountView]);
-const choose=c=>{setCategory(c);setLimit(9);setMobile(false);document.getElementById('catalogo').scrollIntoView({behavior:'smooth'})};
-const open=p=>{setModal(p);setQty(p.min);setColor('A definir');setMethod('A definir com a equipe');setText('');setArt(null);setError('')};
-const add=()=>{if(!validateQuantity(qty,modal.min)){setError(`Informe uma quantidade inteira a partir de ${modal.min} unidades.`);return}const item={id:modal.id,name:modal.nome,qty:Number(qty),color,method,text:text.trim(),art:art?.name||''};try{setCart(combineCartItems([...cart,{...item,key:crypto.randomUUID()}]))}catch(e){setError(e.message);return}setModal(null);setPlacedOrder(null);setGuestContact('');setToast('Produto adicionado ao carrinho')};
-const updateQty=(key,val)=>setCart(c=>c.map(i=>i.key===key?{...i,qty:Math.min(100000,Math.max(minimumFor(i.id),Math.floor(Number(val)||0)))}:i));
-const filtered=useMemo(()=>filterCatalog(products,{category,query,maxMinimum,sort}),[products,category,query,maxMinimum,sort]);
-const total=cart.reduce((s,i)=>s+i.qty,0);
-const totals=cartTotals(cart,products);
-const showAccount=()=>{setModal(null);setCartOpen(false);setAccountView(session?'account':'auth')};
-const send=async e=>{
- e.preventDefault();setCheckoutError('');
- const invalid=contactError(customer);if(invalid){setCheckoutError(invalid);return}
- if(!session){const link=`https://wa.me/${WA}?text=${encodeURIComponent(makeMessage(cart,customer))}`;setGuestContact(link);window.open(link,'_blank','noopener,noreferrer');return}
- if(!canOrder){setCheckoutError('Não foi possível preparar seu pedido. Atualize sua conta e o catálogo antes de continuar.');return}
- if(submitting)return;
- if(!customer.name.trim()){setCheckoutError("Informe seu nome.");return}
- setSubmitting(true);
- try{
-  const {error:profileError}=await supabase.from('profiles').upsert({id:session.user.id,name:customer.name.trim(),company:customer.company,phone:customer.phone,city:customer.city,updated_at:new Date().toISOString()});
-  if(profileError)throw new Error('Não foi possível salvar seus dados de contato. Tente novamente.');
-  const storageKey=`sanes-pending-order-${session.user.id}`;
-  const fingerprint=JSON.stringify(cart);let pending;
-  try{pending=JSON.parse(localStorage.getItem(storageKey)||'null')}catch{}
-  if(!pending||pending.fingerprint!==fingerprint)pending={fingerprint,key:crypto.randomUUID()};
-  try{localStorage.setItem(storageKey,JSON.stringify(pending))}catch{}
-  const {data,error}=await supabase.rpc('place_order',{p_request_key:pending.key,p_items:cart.map(({id,qty,color,method,text,art})=>({id,qty,color,method,text,art})),p_customer:{name:customer.name,company:customer.company,phone:customer.phone,city:customer.city,date:customer.date,notes:customer.notes}});
-  if(error)throw new Error('Não foi possível registrar o pedido. Confira as quantidades e a disponibilidade dos itens e tente novamente. Seu carrinho foi preservado.');
-  setPlacedOrder(data);try{localStorage.removeItem(storageKey)}catch{}
- }catch(error){setCheckoutError(error.message||'Não foi possível registrar seu pedido. Tente novamente.')}finally{setSubmitting(false)}
-};
-return <ClickSpark disabled={reducedMotion} sparkColor="#c69c35" sparkCount={9} sparkSize={12} sparkRadius={32} duration={550}>
-<div id="inicio" className="topline"><span>Feito para sua marca. Pensado para durar.</span><a href={`https://wa.me/${WA}`} target="_blank" rel="noreferrer">Atendimento personalizado <ArrowUpRight size={12}/></a></div>
-<header><div className="nav wrap"><Brand/><nav aria-label="Navegação principal"><a href="#catalogo">Catálogo</a><a href="#personalizacao">Personalização</a><a href="#sobre">A Sanes</a><a href="#contato">Fale com a gente <ArrowUpRight size={13}/></a></nav><div className="nav-actions"><button className="account-action" aria-label={session?"Minha conta":"Entrar na conta"} onClick={showAccount}><UserRound size={18}/><span>{session?"Minha conta":"Entrar"}</span></button><button className="bag" aria-label={`Meu carrinho ${cart.length}`} onClick={()=>{setAccountView(null);setCartOpen(true);setStep(1)}}><ShoppingBag size={18}/><span className="bag-label">Meu carrinho</span>{' '}<b>{cart.length}</b></button><button className="mobile-menu icon" aria-label={mobile?"Fechar menu":"Abrir menu"} aria-expanded={mobile} aria-controls="mobile-navigation" onClick={()=>setMobile(!mobile)}>{mobile?<X/>:<Menu/>}</button></div></div>{mobile&&<nav id="mobile-navigation" className="mobile-links" aria-label="Navegação no celular"><a onClick={()=>setMobile(false)} href="#catalogo">Catálogo</a><a onClick={()=>setMobile(false)} href="#personalizacao">Personalização</a><a onClick={()=>setMobile(false)} href="#sobre">A Sanes</a><a onClick={()=>setMobile(false)} href="#contato">Fale com a gente</a></nav>}</header>
-<main>{(catalogError||syncError)&&<div className="store-notice wrap" role="status">{catalogError||syncError}<button className="text-link" onClick={retry}>Tentar novamente</button></div>}{productId?<ProductPage product={products.find(p=>p.id===productId)} onCustomize={open} whatsapp={WA}/>:<><section className="hero wrap"><AnimatedContent key={String(reducedMotion)} trigger="mount" distance={45} duration={1} stagger={.12}><div className="eyebrow"><span className="dot"/> OBJETOS QUE CRIAM CONEXÕES</div><h1 aria-label="Sua marca. Sempre presente."><span className="hero-stroke" aria-hidden="true"><StrokeText key={String(reducedMotion)} text="Sua marca." fontFamily="Manrope Variable, sans-serif" fontSize={76} fontWeight={650} letterSpacing={-4} strokeColor="#775707" fillColor="#252629" drawDuration={1.5} fillDelay={.15} stagger={.055} fillMode="wipe" trigger="mount" hoverRedraw /></span><span className="hero-rest" aria-hidden="true">Sempre <GradientText className="hero-gradient" colors={['#775707','#805c08','#654800']} animationSpeed={5}>presente.</GradientText></span></h1><p>Transforme brindes em boas lembranças.<br/>Design, cuidado e personalização em cada detalhe.</p><div className="hero-actions"><a className="btn primary" href="#catalogo">Encontre seu brinde <ArrowUpRight size={17}/></a><a className="text-link" href="#personalizacao">Do seu jeito <ArrowRight size={16}/></a></div><div className="hero-proof"><span className="mini-icons"><Package size={15}/><Sparkles size={15}/><Truck size={15}/></span><span>Da primeira ideia à entrega. A gente cuida.</span></div></AnimatedContent><div className="hero-visual" data-reveal><div className="visual-label"><span className="dot"/> SELEÇÃO CORPORATIVA</div><div className="hero-orbit"/><IMG hero/><div className="floating-note"><span className="note-icon"><Sparkles size={18}/></span><div>Sua identidade, em cada detalhe.<small>Personalização feita para sua empresa.</small></div></div><span className="image-note">Composição ilustrativa</span></div></section>
-<section className="benefits"><div className="wrap"><span><ShieldCheck/>Cuidado em cada acabamento</span><span><Sparkles/>Personalização sob medida</span><span><Package/>Pedidos para sua empresa</span><span><Truck/>Entrega em todo o Brasil</span></div></section>
-<section className="catalog wrap" id="catalogo"><div className="section-heading" data-reveal><div><div className="eyebrow">O PRÓXIMO PRESENTE DA SUA MARCA</div><h2 className="tech-heading" aria-label="Escolhas que marcam."><TechText key={String(reducedMotion)} text="Escolhas que marcam." fontFamily="Manrope Variable, sans-serif" fontSize={36} fontWeight={650} letterSpacing={-.045} align="left" color="#252629" accentColor="#b58c31" intro={reducedMotion?"none":"assemble"} introDuration={1.5} specks={10} labels={false} draggable={false} clickKick={!reducedMotion} sweep={!reducedMotion} reveal={reducedMotion?"off":"letter"} guides={false}/></h2></div><p>Para o dia a dia, para grandes momentos.<br/>Encontre o brinde que conta a sua história.</p></div><div className="category-tabs" aria-label="Categorias">{groups.map((g,i)=><button key={g} className={category===g?'active':''} onClick={()=>choose(g)}>{g}{i===0&&<span>{products.length}</span>}</button>)}</div><div className="catalog-tools"><label className="search"><Search size={18}/><input aria-label="Buscar produtos" placeholder="O que você está procurando?" value={query} onChange={e=>{setQuery(e.target.value);setLimit(9)}}/>{query&&<button className="icon" aria-label="Limpar busca" onClick={()=>setQuery('')}><X size={14}/></button>}</label><label className="minimum-filter">Pedido mínimo<select aria-label="Pedido mínimo máximo" value={maxMinimum} onChange={e=>{setMaxMinimum(e.target.value);setLimit(9)}}><option value="">Qualquer quantidade</option>{[15,30,50,100,200].map(n=><option key={n} value={n}>Até {n} unidades</option>)}</select></label><span className="result-count">{filtered.length} produtos encontrados</span><label className="sort"><SlidersHorizontal size={15}/><select aria-label="Ordenar produtos" value={sort} onChange={e=>setSort(e.target.value)}><option value="featured">Destaques</option><option value="name">Nome: A a Z</option><option value="minimum">Menor pedido mínimo</option><option value="category">Categoria</option></select><ChevronDown size={13}/></label></div>
-<div className="product-grid">{filtered.slice(0,limit).map((p,i)=><article className="product-card" key={p.id} data-reveal data-reveal-delay={(i%3)*85}><div className={'product-picture tone-'+i%4}>{p.imagem&&<span className="product-badge">{p.capacidade}</span>}<button className="product-image-button" onClick={()=>open(p)} aria-label={`Personalizar ${p.nome}`}><IMG p={p}/><span className="picture-arrow" aria-hidden="true"><ArrowUpRight size={20}/></span></button></div><div className="product-info"><div className="product-category">{p.categoria}<span>{p.codigo}</span></div><h3><a href={productHash(p.id)}>{p.nome}</a></h3><small className="product-capacity">{p.capacidade||"Especificação a confirmar"}</small><p>{p.desc}</p><div className="product-bottom"><div><strong>{typeof p.unit_price==='number'?money(p.unit_price):"Sob consulta"}</strong><small>{p.min_confirmed===false?"Pedido mínimo a confirmar":`A partir de ${p.min} unidades`}</small></div><button className="add-button" onClick={()=>open(p)} aria-label={`Personalizar ${p.nome}`}><Plus size={20}/></button></div></div></article>)}</div>
-{filtered.length===0&&<div className="empty"><Search size={35}/><h3>Nenhum brinde por aqui.</h3><p>Tente outra busca ou explore todas as categorias.</p><button className="btn primary" onClick={()=>{setQuery('');setCategory(groups[0])}}>Ver todos os produtos</button></div>}{filtered.length>limit&&<div className="load-more"><button className="btn outline" onClick={()=>setLimit(l=>l+9)}>Explorar mais produtos <Plus size={16}/></button><small>Mostrando {Math.min(limit,filtered.length)} de {filtered.length} produtos</small></div>}</section>
-<section className="personalization wrap" id="personalizacao"><div className="personal-art" data-reveal><span className="eyebrow">O DETALHE MUDA TUDO</span><div className="sample-notebook"><div className="notebook-band"/><span>SUA<br/>MARCA<span>é o que fica.</span></span></div><span className="art-bottom">DA SUA IDEIA PARA O MUNDO REAL <ArrowUpRight size={18}/></span></div><div className="personal-copy" data-reveal data-reveal-delay="100"><div className="eyebrow">PERSONALIZAÇÃO SANES</div><h2>Um brinde.<br/><GradientText colors={['#775707','#805c08','#654800']} animationSpeed={8}>Infinitas possibilidades.</GradientText></h2><p>Mais do que aplicar um logo, é dar forma à sua identidade. Conte sua ideia e encontre o acabamento ideal com a nossa equipe.</p><div className="process">{[['01','Escolha o seu brinde','Encontre o produto que combina com o seu momento.'],['02','Deixe com a sua cara','Defina quantidade, cor e detalhes da personalização.'],['03','Vamos criar juntos','Envie seu orçamento e alinhe a arte com a nossa equipe.']].map(([n,t,d])=><div key={n} data-reveal><span>{n}</span><div><h3>{t}</h3><p>{d}</p></div></div>)}</div><a href="#catalogo" className="text-link">Começar meu projeto <ArrowUpRight size={17}/></a></div></section>
-<section className="about wrap" id="sobre" data-reveal><div className="eyebrow">PRAZER, SOMOS A SANES</div><h2>Grandes relações começam<br/>com um <span>pequeno gesto.</span></h2><p>Acreditamos no poder de um presente bem escolhido. Por isso, ajudamos sua empresa a transformar objetos do dia a dia em conexões que ficam.</p><div className="about-tags"><span>Atendimento de perto</span><span>Identidade em cada detalhe</span><span>De Brasília para o Brasil</span></div></section>
-<section className="contact wrap" id="contato" data-reveal><div><div className="eyebrow">VAMOS TIRAR SUA IDEIA DO PAPEL?</div><h2>O próximo brinde<br/>pode ser <em>inesquecível.</em></h2></div><div><a className="btn gold" href={`https://wa.me/${WA}?text=${encodeURIComponent('Olá! Quero criar um projeto personalizado com a Sanes Brindes.')}`} target="_blank" rel="noreferrer">Vamos conversar <ArrowUpRight size={19}/></a><p><MessageCircle size={13}/> Atendimento humano, do início ao fim.</p></div></section></>}</main>
-<footer className="wrap"><div className="footer-top"><Brand/><p>Especialista em brindes.<br/>Presente na sua história.</p><a href="#inicio">Voltar ao topo ↑</a></div><div className="footer-bottom"><span>© {new Date().getFullYear()} Sanes Brindes. Todos os direitos reservados.</span><span>Catálogo sob encomenda · Valores e disponibilidade sob consulta.</span></div></footer>
-{toast&&<div className="toast" role="status"><Check size={18}/>{toast}<button onClick={()=>{setCartOpen(true);setStep(1);setToast('')}}>Ver carrinho →</button></div>}
-{(modal||cartOpen||accountView)&&<div className="overlay" onClick={e=>{if(e.target===e.currentTarget){setModal(null);setCartOpen(false);setAccountView(null)}}}><div ref={dialog} role="dialog" aria-modal="true" aria-labelledby="dialog-title" className={modal?'product-modal':'cart-drawer'}><button className="close icon" aria-label="Fechar" onClick={()=>{setModal(null);setCartOpen(false);setAccountView(null)}}><X/></button>{accountView?session&&accountView==='account'?<AccountPanel key={session.user.id} session={session} staff={staff} wa={WA} onLogout={()=>{setAccountView(null);setPlacedOrder(null);setCustomer({name:"",company:"",email:"",phone:"",city:"",date:"",notes:""})}}/>:<AuthPanel key={recovery?"recovery":"login"} recovery={recovery} onRecovered={()=>setRecovery(false)} onClose={()=>setAccountView(null)}/>:modal?<><div className="modal-visual"><IMG p={modal}/><span>{modal.imagem?"Imagem do catálogo Sanes.":"Foto em breve."} Modelo, cores e técnicas sujeitos à confirmação.</span></div><div className="modal-content"><div className="eyebrow">{modal.codigo} · {modal.categoria}</div><h2 id="dialog-title">{modal.nome}</h2><p>{modal.desc}</p><span className="spec">{modal.capacidade}{modal.dim&&` · ${modal.dim}`}</span><h3>Deixe com a sua cara</h3><label>Quantidade <small>{modal.min_confirmed===false?"Pedido mínimo a confirmar":`Mínimo de ${modal.min} unidades`}</small><input type="number" min={modal.min} max="100000" step="1" value={qty} onChange={e=>setQty(e.target.value)}/></label><div className="form-row"><label>Cor desejada<select value={color} onChange={e=>setColor(e.target.value)}>{['A definir','Preto','Branco','Azul','Vermelho','Natural','Outra — informar nos detalhes'].map(c=><option key={c}>{c}</option>)}</select></label><label>Personalização<select value={method} onChange={e=>setMethod(e.target.value)}>{['A definir com a equipe','Laser','Impressão UV','Silk-screen','Sublimação'].map(c=><option key={c}>{c}</option>)}</select></label></div><small className="field-help">Preferências sujeitas à disponibilidade e compatibilidade do produto.</small><label>O que você imagina?<textarea placeholder="Logo da empresa, frase, posição da gravação…" maxLength={1200} value={text} onChange={e=>setText(e.target.value)}/></label><label className="upload"><Upload size={18}/>{art?art.name:'Selecionar referência da sua arte'}<input type="file" accept="image/png,image/jpeg,image/webp,application/pdf" onChange={e=>{const f=e.target.files[0];if(f&&f.size>10*1024*1024){setError('Selecione um arquivo de até 10 MB.');return}setArt(f||null);setError('')}}/></label><p className="art-notice">A arte não é enviada pelo site. Anexe o arquivo na conversa do WhatsApp.</p><small className="field-help">PNG, JPG, WebP ou PDF, até 10 MB. Aqui fica apenas o nome da referência.</small>{error&&<p className="error" role="alert">{error}</p>}<button className="btn primary full" onClick={add}>Adicionar ao carrinho <Plus size={18}/></button><small className="field-help">Sem pagamento agora. A equipe confirma arte, preço e prazo.</small></div></>:<><div className="eyebrow">SEU PROJETO COMEÇA AQUI</div><h2 id="dialog-title">Meu carrinho<span className="cart-count">{cart.length}</span></h2>{!cart.length?<div className="empty"><ShoppingBag size={44}/><h3>Uma boa ideia começa com uma escolha.</h3><p>Escolha seus brindes, personalize e registre o pedido com sua conta.</p><button className="btn primary" onClick={()=>{setCartOpen(false);choose(groups[0])}}>Explorar catálogo <ArrowRight size={17}/></button></div>:<><div className="steps"><span className={step===1?'current':''}>01 · Seus brindes</span><span className={step===2?'current':''}>02 · Seus dados</span></div>{step===1?<><div className="cart-items">{cart.map(item=><div className="cart-item" key={item.key}><div className="cart-item-top"><div><small>{item.id}</small><h3>{item.name}</h3></div><button className="icon" aria-label={`Remover ${item.name}`} onClick={()=>setCart(c=>c.filter(i=>i.key!==item.key))}><Trash2 size={17}/></button></div><p>{item.color} · {item.method}</p>{item.text&&<p className="item-note">{item.text}</p>}{item.art&&<small>Arte: {item.art} · enviar no WhatsApp</small>}<div className="quantity"><button aria-label={`Diminuir quantidade de ${item.name}`} onClick={()=>updateQty(item.key,item.qty-1)} disabled={item.qty<=minimumFor(item.id)}><Minus size={14}/></button><input aria-label={`Quantidade de ${item.name}`} type="number" min={minimumFor(item.id)} max="100000" value={item.qty} onChange={e=>updateQty(item.key,e.target.value)}/><button aria-label={`Aumentar quantidade de ${item.name}`} onClick={()=>updateQty(item.key,item.qty+1)}><Plus size={14}/></button><span>unidades</span></div></div>)}</div><div className="cart-summary"><span>{cart.length} {cart.length===1?'item personalizado':'itens personalizados'}</span><strong>{total} unidades</strong></div><div className="cart-price"><span>Subtotal estimado</span><strong>{totals.total===null?"A confirmar":money(totals.total)}</strong></div><p className="field-help">Valores, personalização, frete e prazo serão confirmados com a loja. Sem pagamento online nesta etapa.</p><button className="btn primary full" onClick={()=>setStep(2)}>Continuar <ArrowRight size={17}/></button><button className="text-link full center" onClick={()=>setCartOpen(false)}>Continuar explorando</button></>:guestContact?<section className="order-success"><h3>Orçamento preparado</h3><p>O WhatsApp abrirá com os itens e seus dados. Envie a mensagem para solicitar atendimento. Como visitante, este orçamento não fica salvo no histórico.</p><a className="btn primary full" href={guestContact} target="_blank" rel="noreferrer">Abrir orçamento no WhatsApp</a><button className="text-link full center" onClick={()=>setGuestContact('')}>Voltar aos dados</button></section>:placedOrder?<section className="order-success"><span className="success-check"><Check size={28}/></span><h3>Pedido #{placedOrder.number} registrado!</h3><p>Ele já está salvo na sua conta. Agora continue a conversa com a loja para confirmar valores, arte, prazo e pagamento.</p><a className="btn primary full" href={`https://wa.me/${WA}?text=${encodeURIComponent(orderContactMessage(placedOrder))}`} target="_blank" rel="noreferrer">Continuar atendimento no WhatsApp <MessageCircle size={18}/></a><button className="text-link full center" onClick={()=>{setCartOpen(false);setAccountView("account")}}>Ver meus pedidos</button><button className="text-link full center" onClick={()=>{setCart([]);setPlacedOrder(null);setCartOpen(false)}}>Iniciar novo carrinho</button><small className="field-help">Pedido registrado não significa pagamento ou confirmação da compra. Anexe suas artes na conversa do WhatsApp.</small></section>:<form onSubmit={send}><button className="text-link" type="button" onClick={()=>setStep(1)}><ArrowLeft size={15}/> Voltar aos brindes</button><h3>Vamos nos conhecer?</h3><p className="field-help">{session?`Conectado como ${session.user.email}. O pedido ficará registrado na sua conta.`:"Envie o orçamento como visitante ou entre para registrar o pedido no seu histórico."}</p><label>Seu nome *<input required maxLength={100} value={customer.name} onChange={e=>setCustomer({...customer,name:e.target.value})}/></label><label>Empresa<input maxLength={120} value={customer.company} onChange={e=>setCustomer({...customer,company:e.target.value})}/></label><label>E-mail *<input type="email" autoComplete="email" required maxLength={150} readOnly={Boolean(session)} value={customer.email} onChange={e=>setCustomer({...customer,email:e.target.value})}/></label><label>Telefone / WhatsApp *<input type="tel" autoComplete="tel" inputMode="tel" required maxLength={19} value={customer.phone} onChange={e=>setCustomer({...customer,phone:formatBrazilianPhone(e.target.value)})}/></label><label>Cidade de entrega<input autoComplete="address-level2" maxLength={120} value={customer.city} onChange={e=>setCustomer({...customer,city:e.target.value})}/></label><label>Quando você precisa receber?<input type="date" min={todayBrazil()} value={customer.date} onChange={e=>setCustomer({...customer,date:e.target.value})}/></label><label>Algum detalhe especial?<textarea placeholder="Cidade de entrega, ocasião, prazo…" maxLength={1200} value={customer.notes} onChange={e=>setCustomer({...customer,notes:e.target.value})}/></label>{checkoutError&&<p className="error" role="alert">{checkoutError}</p>}<button className="btn primary full" type="submit" disabled={submitting||!authReady}>{submitting?"Registrando pedido…":session?"Registrar pedido":"Solicitar orçamento pelo WhatsApp"} <MessageCircle size={18}/></button><p className="field-help">{session?"O pedido será salvo na sua conta antes do atendimento.":"Login opcional: entre para salvar o histórico dos pedidos."} Valores, prazo e compra são confirmados com a loja.</p>{!session&&<button className="text-link full center" type="button" onClick={showAccount}>Entrar ou criar conta para salvar histórico</button>}</form>}</>}</>}</div></div>}
-</ClickSpark>}
-createRoot(document.getElementById('root')).render(<App/>);
+  const [category, setCategory] = useState(groups[0]),
+    [query, setQuery] = useState(""),
+    [limit, setLimit] = useState(9),
+    [sort, setSort] = useState("featured"),
+    [mobile, setMobile] = useState(false),
+    [modal, setModal] = useState(null),
+    [cartOpen, setCartOpen] = useState(false),
+    [step, setStep] = useState(1),
+    [toast, setToast] = useState(""),
+    [customer, setCustomer] = useState({
+      name: "",
+      company: "",
+      email: "",
+      phone: "",
+      city: "",
+      date: "",
+      notes: "",
+    });
+  const [qty, setQty] = useState(30),
+    [color, setColor] = useState("A definir"),
+    [method, setMethod] = useState("A definir com a equipe"),
+    [text, setText] = useState(""),
+    [art, setArt] = useState(null),
+    [error, setError] = useState("");
+  const dialog = useRef(null),
+    trigger = useRef(null);
+  useEffect(() => {
+    const close = (e) => {
+      if (e.key === "Escape") setMobile(false);
+    };
+    const desktop = window.matchMedia("(min-width: 1024px)");
+    const reset = () => setMobile(false);
+    document.addEventListener("keydown", close);
+    desktop.addEventListener("change", reset);
+    return () => {
+      document.removeEventListener("keydown", close);
+      desktop.removeEventListener("change", reset);
+    };
+  }, []);
+  useScrollReveal([category, query, limit, sort, maxMinimum, productId]);
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(""), 3000);
+    return () => clearTimeout(t);
+  }, [toast]);
+  useEffect(() => {
+    if (!modal && !cartOpen && !accountView) return;
+    trigger.current = document.activeElement;
+    document.body.style.overflow = "hidden";
+    setTimeout(() => {
+      const root = dialog.current;
+      const field = root?.querySelector(
+        'input:not([type="hidden"]):not([disabled]),select:not([disabled]),textarea:not([disabled])',
+      );
+      (
+        field || root?.querySelector('button:not([disabled]),[tabindex="0"]')
+      )?.focus();
+    }, 10);
+    const key = (e) => {
+      if (e.key === "Escape") {
+        setModal(null);
+        setCartOpen(false);
+        setAccountView(null);
+      }
+      if (e.key === "Tab") {
+        const nodes = dialog.current?.querySelectorAll(
+          'button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),a[href],[tabindex]:not([tabindex="-1"])',
+        );
+        if (!nodes?.length) return;
+        const visible = Array.from(nodes).filter(
+          (node) =>
+            node.getClientRects().length &&
+            !node.closest('[aria-hidden="true"]'),
+        );
+        const first = visible[0],
+          last = visible[visible.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener("keydown", key);
+    return () => {
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", key);
+      trigger.current?.focus();
+    };
+  }, [!!modal, cartOpen, accountView]);
+  const choose = (c) => {
+    setCategory(c);
+    setLimit(9);
+    setMobile(false);
+    document.getElementById("catalogo").scrollIntoView({ behavior: "smooth" });
+  };
+  const open = (p) => {
+    setModal(p);
+    setQty(p.min);
+    setColor("A definir");
+    setMethod("A definir com a equipe");
+    setText("");
+    setArt(null);
+    setError("");
+  };
+  const add = () => {
+    if (!validateQuantity(qty, modal.min)) {
+      setError(
+        `Informe uma quantidade inteira a partir de ${modal.min} unidades.`,
+      );
+      return;
+    }
+    const item = {
+      id: modal.id,
+      name: modal.nome,
+      qty: Number(qty),
+      color,
+      method,
+      text: text.trim(),
+      art: art?.name || "",
+    };
+    try {
+      setCart(
+        combineCartItems([...cart, { ...item, key: crypto.randomUUID() }]),
+      );
+    } catch (e) {
+      setError(e.message);
+      return;
+    }
+    setModal(null);
+    setPlacedOrder(null);
+    setGuestContact("");
+    setToast("Produto adicionado ao carrinho");
+  };
+  const updateQty = (key, val) =>
+    setCart((c) =>
+      c.map((i) =>
+        i.key === key
+          ? {
+              ...i,
+              qty: Math.min(
+                100000,
+                Math.max(minimumFor(i.id), Math.floor(Number(val) || 0)),
+              ),
+            }
+          : i,
+      ),
+    );
+  const filtered = useMemo(
+    () => filterCatalog(products, { category, query, maxMinimum, sort }),
+    [products, category, query, maxMinimum, sort],
+  );
+  const total = cart.reduce((s, i) => s + i.qty, 0);
+  const totals = cartTotals(cart, products);
+  const showAccount = () => {
+    setModal(null);
+    setCartOpen(false);
+    setAccountView(session ? "account" : "auth");
+  };
+  const send = async (e) => {
+    e.preventDefault();
+    setCheckoutError("");
+    const invalid = contactError(customer);
+    if (invalid) {
+      setCheckoutError(invalid);
+      return;
+    }
+    if (!session) {
+      const link = `https://wa.me/${WA}?text=${encodeURIComponent(makeMessage(cart, customer))}`;
+      setGuestContact(link);
+      window.open(link, "_blank", "noopener,noreferrer");
+      return;
+    }
+    if (!canOrder) {
+      setCheckoutError(
+        "Não foi possível preparar seu pedido. Atualize sua conta e o catálogo antes de continuar.",
+      );
+      return;
+    }
+    if (submitting) return;
+    if (!customer.name.trim()) {
+      setCheckoutError("Informe seu nome.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const { error: profileError } = await supabase.from("profiles").upsert({
+        id: session.user.id,
+        name: customer.name.trim(),
+        company: customer.company,
+        phone: customer.phone,
+        city: customer.city,
+        updated_at: new Date().toISOString(),
+      });
+      if (profileError)
+        throw new Error(
+          "Não foi possível salvar seus dados de contato. Tente novamente.",
+        );
+      const storageKey = `sanes-pending-order-${session.user.id}`;
+      const fingerprint = JSON.stringify(cart);
+      let pending;
+      try {
+        pending = JSON.parse(localStorage.getItem(storageKey) || "null");
+      } catch {}
+      if (!pending || pending.fingerprint !== fingerprint)
+        pending = { fingerprint, key: crypto.randomUUID() };
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(pending));
+      } catch {}
+      const { data, error } = await supabase.rpc("place_order", {
+        p_request_key: pending.key,
+        p_items: cart.map(({ id, qty, color, method, text, art }) => ({
+          id,
+          qty,
+          color,
+          method,
+          text,
+          art,
+        })),
+        p_customer: {
+          name: customer.name,
+          company: customer.company,
+          phone: customer.phone,
+          city: customer.city,
+          date: customer.date,
+          notes: customer.notes,
+        },
+      });
+      if (error)
+        throw new Error(
+          "Não foi possível registrar o pedido. Confira as quantidades e a disponibilidade dos itens e tente novamente. Seu carrinho foi preservado.",
+        );
+      setPlacedOrder(data);
+      try {
+        localStorage.removeItem(storageKey);
+      } catch {}
+    } catch (error) {
+      setCheckoutError(
+        error.message ||
+          "Não foi possível registrar seu pedido. Tente novamente.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+  return (
+    <ClickSpark
+      disabled={reducedMotion}
+      sparkColor="#c69c35"
+      sparkCount={9}
+      sparkSize={12}
+      sparkRadius={32}
+      duration={550}
+    >
+      <Header
+        {...{
+          session,
+          showAccount,
+          cart,
+          mobile,
+          setMobile,
+          setAccountView,
+          setCartOpen,
+          setStep,
+        }}
+      />
+      <main>
+        {(catalogError || syncError) && (
+          <div className="store-notice wrap" role="status">
+            {catalogError || syncError}
+            <button className="text-link" onClick={retry}>
+              Tentar novamente
+            </button>
+          </div>
+        )}
+        {productId ? (
+          <ProductPage
+            product={products.find((p) => p.id === productId)}
+            onCustomize={open}
+          />
+        ) : (
+          <>
+            <Hero reducedMotion={reducedMotion} />
+            <section className="benefits">
+              <div className="wrap">
+                <span>
+                  <ShieldCheck />
+                  Cuidado em cada acabamento
+                </span>
+                <span>
+                  <Sparkles />
+                  Personalização sob medida
+                </span>
+                <span>
+                  <Package />
+                  Pedidos para sua empresa
+                </span>
+                <span>
+                  <Truck />
+                  Entrega em todo o Brasil
+                </span>
+              </div>
+            </section>
+            <section className="catalog wrap" id="catalogo">
+              <div className="section-heading" data-reveal>
+                <div>
+                  <div className="eyebrow">O PRÓXIMO PRESENTE DA SUA MARCA</div>
+                  <h2
+                    className="tech-heading"
+                    aria-label="Escolhas que marcam."
+                  >
+                    <TechText
+                      key={String(reducedMotion)}
+                      text="Escolhas que marcam."
+                      fontFamily="Manrope Variable, sans-serif"
+                      fontSize={36}
+                      fontWeight={650}
+                      letterSpacing={-0.045}
+                      align="left"
+                      color="#252629"
+                      accentColor="#b58c31"
+                      intro={reducedMotion ? "none" : "assemble"}
+                      introDuration={1.5}
+                      specks={10}
+                      labels={false}
+                      draggable={false}
+                      clickKick={!reducedMotion}
+                      sweep={!reducedMotion}
+                      reveal={reducedMotion ? "off" : "letter"}
+                      guides={false}
+                    />
+                  </h2>
+                </div>
+                <p>
+                  Para o dia a dia, para grandes momentos.
+                  <br />
+                  Encontre o brinde que conta a sua história.
+                </p>
+              </div>
+              <div className="category-tabs" aria-label="Categorias">
+                {groups.map((g, i) => (
+                  <button
+                    key={g}
+                    className={category === g ? "active" : ""}
+                    onClick={() => choose(g)}
+                  >
+                    {g}
+                    {i === 0 && <span>{products.length}</span>}
+                  </button>
+                ))}
+              </div>
+              <div className="catalog-tools">
+                <label className="search">
+                  <Search size={18} />
+                  <input
+                    aria-label="Buscar produtos"
+                    placeholder="O que você está procurando?"
+                    value={query}
+                    onChange={(e) => {
+                      setQuery(e.target.value);
+                      setLimit(9);
+                    }}
+                  />
+                  {query && (
+                    <button
+                      className="icon"
+                      aria-label="Limpar busca"
+                      onClick={() => setQuery("")}
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </label>
+                <label className="minimum-filter">
+                  Pedido mínimo
+                  <select
+                    aria-label="Pedido mínimo máximo"
+                    value={maxMinimum}
+                    onChange={(e) => {
+                      setMaxMinimum(e.target.value);
+                      setLimit(9);
+                    }}
+                  >
+                    <option value="">Qualquer quantidade</option>
+                    {[15, 30, 50, 100, 200].map((n) => (
+                      <option key={n} value={n}>
+                        Até {n} unidades
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <span className="result-count">
+                  {filtered.length} produtos encontrados
+                </span>
+                <label className="sort">
+                  <SlidersHorizontal size={15} />
+                  <select
+                    aria-label="Ordenar produtos"
+                    value={sort}
+                    onChange={(e) => setSort(e.target.value)}
+                  >
+                    <option value="featured">Destaques</option>
+                    <option value="name">Nome: A a Z</option>
+                    <option value="minimum">Menor pedido mínimo</option>
+                    <option value="category">Categoria</option>
+                  </select>
+                  <ChevronDown size={13} />
+                </label>
+              </div>
+              <div className="product-grid">
+                {filtered.slice(0, limit).map((p, i) => (
+                  <ProductCard
+                    key={p.id}
+                    product={p}
+                    index={i}
+                    onCustomize={open}
+                  />
+                ))}
+              </div>
+              {filtered.length === 0 && (
+                <div className="empty">
+                  <Search size={35} />
+                  <h3>Nenhum brinde por aqui.</h3>
+                  <p>Tente outra busca ou explore todas as categorias.</p>
+                  <button
+                    className="btn primary"
+                    onClick={() => {
+                      setQuery("");
+                      setCategory(groups[0]);
+                    }}
+                  >
+                    Ver todos os produtos
+                  </button>
+                </div>
+              )}
+              {filtered.length > limit && (
+                <div className="load-more">
+                  <button
+                    className="btn outline"
+                    onClick={() => setLimit((l) => l + 9)}
+                  >
+                    Explorar mais produtos <Plus size={16} />
+                  </button>
+                  <small>
+                    Mostrando {Math.min(limit, filtered.length)} de{" "}
+                    {filtered.length} produtos
+                  </small>
+                </div>
+              )}
+            </section>
+            <MarketingSections />
+          </>
+        )}
+      </main>
+      <Footer />
+      {toast && (
+        <div className="toast" role="status">
+          <Check size={18} />
+          {toast}
+          <button
+            onClick={() => {
+              setCartOpen(true);
+              setStep(1);
+              setToast("");
+            }}
+          >
+            Ver carrinho →
+          </button>
+        </div>
+      )}
+      {(modal || cartOpen || accountView) && (
+        <div
+          className="overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setModal(null);
+              setCartOpen(false);
+              setAccountView(null);
+            }
+          }}
+        >
+          <div
+            ref={dialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dialog-title"
+            className={modal ? "product-modal" : "cart-drawer"}
+          >
+            <button
+              className="close icon"
+              aria-label="Fechar"
+              onClick={() => {
+                setModal(null);
+                setCartOpen(false);
+                setAccountView(null);
+              }}
+            >
+              <X />
+            </button>
+            {accountView ? (
+              session && accountView === "account" ? (
+                <AccountPanel
+                  key={session.user.id}
+                  session={session}
+                  staff={staff}
+                  wa={WA}
+                  onLogout={() => {
+                    setAccountView(null);
+                    setPlacedOrder(null);
+                    setCustomer({
+                      name: "",
+                      company: "",
+                      email: "",
+                      phone: "",
+                      city: "",
+                      date: "",
+                      notes: "",
+                    });
+                  }}
+                />
+              ) : (
+                <AuthPanel
+                  key={recovery ? "recovery" : "login"}
+                  recovery={recovery}
+                  onRecovered={() => setRecovery(false)}
+                  onClose={() => setAccountView(null)}
+                />
+              )
+            ) : modal ? (
+              <ProductModal
+                product={modal}
+                form={{
+                  qty,
+                  setQty,
+                  color,
+                  setColor,
+                  method,
+                  setMethod,
+                  text,
+                  setText,
+                  art,
+                  setArt,
+                  error,
+                  setError,
+                }}
+                onAdd={add}
+              />
+            ) : (
+              <CartDrawer
+                {...{
+                  cart,
+                  step,
+                  setStep,
+                  choose,
+                  minimumFor,
+                  updateQty,
+                  setCart,
+                  setCartOpen,
+                  totals,
+                  total,
+                }}
+                checkoutState={{
+                  guestContact,
+                  placedOrder,
+                  customer,
+                  session,
+                  submitting,
+                  authReady,
+                  checkoutError,
+                }}
+                checkoutActions={{
+                  setGuestContact,
+                  setCartOpen,
+                  setAccountView,
+                  setCart,
+                  setPlacedOrder,
+                  send,
+                  setCustomer,
+                  showAccount,
+                  setStep,
+                }}
+              />
+            )}
+          </div>
+        </div>
+      )}
+    </ClickSpark>
+  );
+}
+createRoot(document.getElementById("root")).render(<App />);

@@ -1,0 +1,152 @@
+{
+  "images": 24,
+  "max_width": 804,
+  "limit": 1000,
+  "resizing_required": false,
+  "files": [
+    {
+      "file": "public/assets/catalog/lancamentos-02-sb-104.webp",
+      "width": 804,
+      "height": 1137,
+      "bytes": 49482
+    },
+    {
+      "file": "public/assets/catalog/lancamentos-03-sb-105.webp",
+      "width": 804,
+      "height": 1137,
+      "bytes": 68954
+    },
+    {
+      "file": "public/assets/catalog/lancamentos-04-sb-106.webp",
+      "width": 804,
+      "height": 1137,
+      "bytes": 58528
+    },
+    {
+      "file": "public/assets/catalog/lancamentos-05-sb-107.webp",
+      "width": 804,
+      "height": 1137,
+      "bytes": 49752
+    },
+    {
+      "file": "public/assets/catalog/lancamentos-06-sb-108.webp",
+      "width": 804,
+      "height": 1137,
+      "bytes": 61934
+    },
+    {
+      "file": "public/assets/catalog/lancamentos-07-sb-109.webp",
+      "width": 804,
+      "height": 1137,
+      "bytes": 108722
+    },
+    {
+      "file": "public/assets/catalog/lancamentos-08-sb-110.webp",
+      "width": 804,
+      "height": 1137,
+      "bytes": 92056
+    },
+    {
+      "file": "public/assets/catalog/lancamentos-09-sb-086.webp",
+      "width": 804,
+      "height": 557,
+      "bytes": 44828
+    },
+    {
+      "file": "public/assets/catalog/lancamentos-09-sb-111.webp",
+      "width": 804,
+      "height": 581,
+      "bytes": 46976
+    },
+    {
+      "file": "public/assets/catalog/lancamentos-10-sb-087.webp",
+      "width": 804,
+      "height": 1137,
+      "bytes": 158952
+    },
+    {
+      "file": "public/assets/catalog/lancamentos-11-sb-088.webp",
+      "width": 804,
+      "height": 1137,
+      "bytes": 136376
+    },
+    {
+      "file": "public/assets/catalog/lancamentos-12-sb-089.webp",
+      "width": 804,
+      "height": 1137,
+      "bytes": 102044
+    },
+    {
+      "file": "public/assets/catalog/lancamentos-13-sb-078.webp",
+      "width": 804,
+      "height": 1137,
+      "bytes": 164012
+    },
+    {
+      "file": "public/assets/catalog/lancamentos-14-sb-079.webp",
+      "width": 804,
+      "height": 1137,
+      "bytes": 61934
+    },
+    {
+      "file": "public/assets/catalog/lancamentos-15-sb-080.webp",
+      "width": 804,
+      "height": 1137,
+      "bytes": 96462
+    },
+    {
+      "file": "public/assets/catalog/lancamentos-16-sb-081.webp",
+      "width": 804,
+      "height": 1137,
+      "bytes": 260988
+    },
+    {
+      "file": "public/assets/catalog/lancamentos-17-sb-082.webp",
+      "width": 804,
+      "height": 1137,
+      "bytes": 115352
+    },
+    {
+      "file": "public/assets/catalog/lancamentos-18-sb-083.webp",
+      "width": 804,
+      "height": 1137,
+      "bytes": 89036
+    },
+    {
+      "file": "public/assets/catalog/lancamentos-19-sb-084.webp",
+      "width": 804,
+      "height": 1137,
+      "bytes": 141388
+    },
+    {
+      "file": "public/assets/catalog/lancamentos-20-sb-085.webp",
+      "width": 804,
+      "height": 1137,
+      "bytes": 93608
+    },
+    {
+      "file": "public/assets/catalog/lancamentos-21-sb-068.webp",
+      "width": 804,
+      "height": 1137,
+      "bytes": 107458
+    },
+    {
+      "file": "public/assets/catalog/lancamentos-22-sb-065.webp",
+      "width": 804,
+      "height": 1137,
+      "bytes": 80932
+    },
+    {
+      "file": "public/assets/catalog/lancamentos-23-sb-066.webp",
+      "width": 804,
+      "height": 1137,
+      "bytes": 61716
+    },
+    {
+      "file": "public/assets/catalog/lancamentos-24-sb-067.webp",
+      "width": 804,
+      "height": 1137,
+      "bytes": 74226
+    }
+  ]
+}

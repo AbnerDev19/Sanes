@@ -1,16 +1,39 @@
-import { readFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
-import { loadEnv } from 'vite';
-import { createClient } from '@supabase/supabase-js';
-import { assertPublicKey } from '../src/lib/publicConfig.js';
-const root=fileURLToPath(new URL('../',import.meta.url));
-const env={...loadEnv('production',root,'VITE_'),...process.env};
-const url=env.VITE_SUPABASE_URL,key=env.VITE_SUPABASE_PUBLISHABLE_KEY||env.VITE_SUPABASE_ANON_KEY;
+import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import { loadEnv } from "vite";
+import { createClient } from "@supabase/supabase-js";
+import { assertPublicKey } from "../src/lib/publicConfig.js";
+const root = fileURLToPath(new URL("../", import.meta.url));
+const env = { ...loadEnv("production", root, "VITE_"), ...process.env };
+const url = env.VITE_SUPABASE_URL,
+  key = env.VITE_SUPABASE_PUBLISHABLE_KEY || env.VITE_SUPABASE_ANON_KEY;
 assertPublicKey(key);
-if(!url||!key||!url.startsWith('https://')||url.includes('YOUR_PROJECT'))throw new Error('Production requires the real Supabase URL and a public publishable/anon key.');
-const report=JSON.parse(await readFile(new URL('../catalog/import-report.json',import.meta.url),'utf8'));
-if(report.documents.some(d=>d.status!=='extracted'))throw new Error('A supplied catalog is still pending extraction. Complete catalog/import-report.json from the actual file before production.');
-const db=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
-const{data,error}=await db.from('products').select('id,min_qty,unit_price,active').eq('active',true).limit(1);
-if(error||!data?.length)throw new Error('The live catalog is unavailable or empty. Apply the migration and import the products before production.');
-console.log('Public configuration and live catalog checked. Verify Auth URLs, SMTP and a real customer sign-in using supabase/README.md.');
+if (!url || !key || !url.startsWith("https://") || url.includes("YOUR_PROJECT"))
+  throw new Error(
+    "Production requires the real Supabase URL and a public publishable/anon key.",
+  );
+const report = JSON.parse(
+  await readFile(
+    new URL("../catalog/import-report.json", import.meta.url),
+    "utf8",
+  ),
+);
+if (report.documents.some((d) => d.status !== "extracted"))
+  throw new Error(
+    "A supplied catalog is still pending extraction. Complete catalog/import-report.json from the actual file before production.",
+  );
+const db = createClient(url, key, {
+  auth: { persistSession: false, autoRefreshToken: false },
+});
+const { data, error } = await db
+  .from("products")
+  .select("id,min_qty,unit_price,active")
+  .eq("active", true)
+  .limit(1);
+if (error || !data?.length)
+  throw new Error(
+    "The live catalog is unavailable or empty. Apply the migration and import the products before production.",
+  );
+console.log(
+  "Public configuration and live catalog checked. Verify Auth URLs, SMTP and a real customer sign-in using supabase/README.md.",
+);

@@ -1,4 +1,48 @@
-import test from'node:test';import assert from'node:assert/strict';import{todayBrazil,validDeliveryDate,validPhone,formatBrazilianPhone,contactError}from'../src/lib/checkout.js';import{combineCartItems,mergeCarts}from'../src/lib/commerce.js';
-test('delivery dates use Brazil time and reject past or impossible dates',()=>{const now=new Date('2026-11-18T01:00:00Z');assert.equal(todayBrazil(now),'2026-11-17');assert.ok(validDeliveryDate('2026-11-17',now));assert.ok(!validDeliveryDate('2026-11-16',now));assert.ok(!validDeliveryDate('2026-02-31',now))});
-test('BR phone mask supports mobile, landline and pasted country code',()=>{assert.equal(formatBrazilianPhone('+55 (61) 98133-3737'),'(61) 98133-3737');assert.ok(validPhone('(61) 98133-3737'));assert.ok(validPhone('(61) 3333-3737'));assert.ok(!validPhone('12345'));assert.match(contactError({name:'Ana',email:'bad',phone:'61981333737'}),/e-mail/)});
-test('same personalization combines quantities without duplicating restored keys',()=>{const a={id:'A',key:'1',qty:30,color:'Azul',method:'Laser',text:'Logo',art:'arte.pdf'};assert.equal(combineCartItems([a,{...a,key:'2'}])[0].qty,60);assert.equal(combineCartItems([a,{...a,key:'2',text:'Outra arte'}]).length,2);assert.equal(mergeCarts([a],[a],[{id:'A',nome:'Garrafa',min:30}])[0].qty,30);assert.throws(()=>combineCartItems([{...a,qty:100000},a]),/100.000/)});
+import test from "node:test";
+import assert from "node:assert/strict";
+import {
+  todayBrazil,
+  validDeliveryDate,
+  validPhone,
+  formatBrazilianPhone,
+  contactError,
+} from "../src/lib/checkout.js";
+import { combineCartItems, mergeCarts } from "../src/lib/commerce.js";
+test("delivery dates use Brazil time and reject past or impossible dates", () => {
+  const now = new Date("2026-11-18T01:00:00Z");
+  assert.equal(todayBrazil(now), "2026-11-17");
+  assert.ok(validDeliveryDate("2026-11-17", now));
+  assert.ok(!validDeliveryDate("2026-11-16", now));
+  assert.ok(!validDeliveryDate("2026-02-31", now));
+});
+test("BR phone mask supports mobile, landline and pasted country code", () => {
+  assert.equal(formatBrazilianPhone("+55 (61) 98133-3737"), "(61) 98133-3737");
+  assert.ok(validPhone("(61) 98133-3737"));
+  assert.ok(validPhone("(61) 3333-3737"));
+  assert.ok(!validPhone("12345"));
+  assert.match(
+    contactError({ name: "Ana", email: "bad", phone: "61981333737" }),
+    /e-mail/,
+  );
+});
+test("same personalization combines quantities without duplicating restored keys", () => {
+  const a = {
+    id: "A",
+    key: "1",
+    qty: 30,
+    color: "Azul",
+    method: "Laser",
+    text: "Logo",
+    art: "arte.pdf",
+  };
+  assert.equal(combineCartItems([a, { ...a, key: "2" }])[0].qty, 60);
+  assert.equal(
+    combineCartItems([a, { ...a, key: "2", text: "Outra arte" }]).length,
+    2,
+  );
+  assert.equal(
+    mergeCarts([a], [a], [{ id: "A", nome: "Garrafa", min: 30 }])[0].qty,
+    30,
+  );
+  assert.throws(() => combineCartItems([{ ...a, qty: 100000 }, a]), /100.000/);
+});
