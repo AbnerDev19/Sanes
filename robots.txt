@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://abnerdev19.github.io/Sanes/sitemap.xml
