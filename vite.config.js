@@ -11,7 +11,25 @@ export default defineConfig(({ mode }) => {
       env.VITE_SUPABASE_PUBLISHABLE_KEY ||
       env.VITE_SUPABASE_ANON_KEY,
   );
+  const publicEnv = { ...env, ...process.env };
+  const optionalKeys = [
+    "VITE_SUPABASE_URL",
+    "VITE_SUPABASE_PUBLISHABLE_KEY",
+    "VITE_SUPABASE_ANON_KEY",
+    "VITE_WHATSAPP",
+    "VITE_SITE_URL",
+    "VITE_BUSINESS_ADDRESS",
+    "VITE_BUSINESS_CNPJ",
+    "VITE_BUSINESS_HOURS",
+    "VITE_BUSINESS_EMAIL",
+  ];
   return {
+    define: Object.fromEntries(
+      optionalKeys.map((key) => [
+        `import.meta.env.${key}`,
+        JSON.stringify(publicEnv[key] || ""),
+      ]),
+    ),
     plugins: [seoPlugin({ ...env, ...process.env }, projectRoot)],
     root: "app",
     envDir: projectRoot,
