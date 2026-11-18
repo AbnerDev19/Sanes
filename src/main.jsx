@@ -17,6 +17,8 @@ import TechText from "./components/TechText";
 import Header from "./components/Header";
 import Hero from "./components/Hero";
 import Footer from "./components/Footer";
+import FAQ from "./components/FAQ";
+import { SITE_TITLE, SITE_DESCRIPTION } from "./lib/seo";
 import MarketingSections from "./components/MarketingSections";
 import ProductCard from "./components/ProductCard";
 import ProductModal from "./components/ProductModal";
@@ -55,6 +57,12 @@ function App() {
   }, []);
   useEffect(() => {
     if (productId) window.scrollTo(0, 0);
+    else if (location.hash && !location.hash.startsWith("#/"))
+      requestAnimationFrame(() =>
+        document
+          .getElementById(location.hash.slice(1))
+          ?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth" }),
+      );
   }, [productId]);
   const {
     products,
@@ -71,6 +79,17 @@ function App() {
     retry,
     canOrder,
   } = useStore();
+  useEffect(() => {
+    const product = products.find((p) => p.id === productId);
+    document.title = product
+      ? `${product.nome} | Sanes Brindes`
+      : productId
+        ? "Produto não encontrado | Sanes Brindes"
+        : SITE_TITLE;
+    document
+      .querySelector('meta[name="description"]')
+      ?.setAttribute("content", product?.desc || SITE_DESCRIPTION);
+  }, [productId, products]);
   const [guestContact, setGuestContact] = useState("");
   const [accountView, setAccountView] = useState(null),
     [submitting, setSubmitting] = useState(false),
@@ -563,6 +582,7 @@ function App() {
               )}
             </section>
             <MarketingSections />
+            <FAQ />
           </>
         )}
       </main>

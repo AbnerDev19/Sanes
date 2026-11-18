@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from "vite";
 import { fileURLToPath } from "node:url";
+import { seoPlugin } from "./scripts/seo-plugin.mjs";
 import { assertPublicKey } from "./src/lib/publicConfig.js";
 const projectRoot = fileURLToPath(new URL("./", import.meta.url));
 export default defineConfig(({ mode }) => {
@@ -11,6 +12,7 @@ export default defineConfig(({ mode }) => {
       env.VITE_SUPABASE_ANON_KEY,
   );
   return {
+    plugins: [seoPlugin({ ...env, ...process.env }, projectRoot)],
     root: "app",
     envDir: projectRoot,
     resolve: {

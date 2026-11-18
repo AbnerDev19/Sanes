@@ -5,5 +5,7 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 await rm(`${root}assets`, { recursive: true, force: true });
 await cp(`${root}dist/assets`, `${root}assets`, { recursive: true });
 await cp(`${root}dist/index.html`, `${root}index.html`);
+for (const name of ["robots.txt", "sitemap.xml", "favicon.svg"])
+  await cp(`${root}dist/${name}`, `${root}${name}`);
 await writeFile(`${root}.nojekyll`, "");
 console.log("GitHub Pages files prepared: index.html, assets/, .nojekyll");

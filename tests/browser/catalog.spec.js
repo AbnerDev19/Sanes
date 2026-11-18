@@ -47,3 +47,29 @@ test("maximum minimum-order filter hides unconfirmed quantities", async ({
     .selectOption("");
   await expect(page.locator(".product-card")).toHaveCount(1);
 });
+
+test("SEO metadata and FAQ review notice are present", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
+    "content",
+    /Sanes Brindes/,
+  );
+  await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute(
+    "content",
+    "summary_large_image",
+  );
+  const graph = JSON.parse(
+    await page.locator('script[type="application/ld+json"]').textContent(),
+  );
+  expect(
+    graph["@graph"].find((n) => n["@type"] === "ItemList").numberOfItems,
+  ).toBe(111);
+  await expect(page.locator("#faq")).toContainText("pendente de revisão");
+  await page.locator("#faq summary").first().click();
+  await expect(page.locator("#faq details[open]")).toHaveCount(1);
+  const response = await page.request.get("/sitemap.xml");
+  expect(response.status()).toBe(200);
+  expect(await response.text()).toContain(
+    "https://abnerdev19.github.io/Sanes/",
+  );
+});

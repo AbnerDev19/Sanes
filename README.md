@@ -38,10 +38,22 @@ O build de produção exige as configurações públicas reais e recusa publicar
 - `src/responsive.css` e `commerce.css`: adaptações para celular e novos fluxos.
 - `app/index.html`: HTML fonte. O `index.html` da raiz e `assets/` são gerados para o Pages.
 
-O carrinho de visitante é separado dos carrinhos das contas. O pedido é salvo no banco antes de oferecer o contato pelo WhatsApp. Artes selecionadas são referências de nome; o arquivo é anexado pelo cliente na conversa com a loja. Valores, arte, frete, prazo e pagamento são confirmados pela equipe.
+O visitante pode solicitar orçamento com nome, e-mail e telefone diretamente pelo WhatsApp, sem login e sem gravar pedido anônimo no banco. O login é opcional para salvar histórico; nesse fluxo, o pedido é validado e salvo no servidor antes do contato. O carrinho de visitante é separado dos carrinhos das contas. Artes selecionadas são referências de nome; o arquivo é anexado pelo cliente na conversa com a loja. Valores, arte, frete, prazo e pagamento são confirmados pela equipe.
 
 ### Publicação automática no Pages
 
 O workflow `.github/workflows/pages.yml` compila o código atual e publica `dist/` quando a variável do repositório `PAGES_ACTIONS_ENABLED` é `true`. Para ativar: em **Settings → Pages → Source**, selecione **GitHub Actions**, e em **Settings → Secrets and variables → Actions → Variables**, defina `PAGES_ACTIONS_ENABLED=true`. As variáveis públicas opcionais são `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_WHATSAPP` e `VITE_SITE_URL`; nunca use uma chave privilegiada.
 
 A integração desta conversa recebe HTTP 403 ao tentar alterar a configuração do Pages. Enquanto o modo legado continuar ativo, o workflow verifica que `index.html` e `assets/` correspondem ao build atual, para impedir divergências silenciosas. `npm run build:pages` atualiza esses arquivos para publicação legada.
+
+## Revisão para publicação
+
+As seis prioridades foram implementadas, com testes unitários, SQL local, acessibilidade automatizada e fluxos de navegador. Esses testes não equivalem a uma certificação WCAG nem à validação de um Supabase remoto.
+
+- 111 produtos em seis categorias; 24 imagens WebP reais (largura máxima 804px) e 87 placeholders “Foto em breve”. Não há preços inventados.
+- Orçamento como visitante funciona sem Supabase. Para conta e histórico, configure o projeto e aplique as duas migrações em ordem.
+- `npm run build:pages` gera o catálogo publicável e atualiza HTML, assets, favicon, robots e sitemap da raiz. O comando estrito `build:production` continua exigindo a conclusão da importação remota e do PDF pendente.
+- Configure `VITE_WHATSAPP` e `VITE_SITE_URL` conforme o ambiente. Endereço, CNPJ, horário e e-mail ficam vazios em `.env.example`; preencha somente dados confirmados.
+- A FAQ está marcada na interface como conteúdo provisório para revisão. Após revisar as respostas em `src/business.js`, altere `FAQ_REVIEW_PENDING`.
+- Links de produto usam `#/produto/SB-104`. O compartilhamento abre o produto, mas a prévia social e o sitemap usam a página geral: robôs não recebem HTML exclusivo por hash.
+- A arte não é transmitida pelo site: o cliente deve anexá-la no WhatsApp.

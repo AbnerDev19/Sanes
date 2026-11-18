@@ -19,6 +19,8 @@ A migração cria catálogo público, perfis privados, carrinhos por conta, pedi
 
 O bucket `catalog` é público e exclusivo para imagens comerciais. Artes de clientes não são enviadas para esse bucket: o cliente as anexa no atendimento pelo WhatsApp.
 
+Aplique depois `migrations/202611170002_order_contact_validation.sql`, que adiciona validação de telefone e data sem alterar a migração original. O RPC anterior perde acesso público; preços e isolamento por RLS continuam no servidor.
+
 ## 2. Importar os dados e imagens
 
 O script executa uploads para `catalog` e upserts dos produtos, preservando os preços e a disponibilidade que já estiverem administrados na loja. Use uma credencial privilegiada somente no ambiente privado do importador, nunca em código de navegador, commits, logs ou variáveis `VITE_`.
@@ -71,6 +73,6 @@ Antes de liberar a compra, verificar no projeto real: cadastro e confirmação d
 
 ## Funcionamento nesta etapa
 
-O comprador monta o carrinho sem login, define preferências e entra na conta para registrar o pedido. Após a confirmação do banco, a tela mostra o número e oferece um link para conversar com a loja. O pedido fica no histórico. A equipe confirma valores, frete, arte, prazo e pagamento diretamente no atendimento. Não existe cobrança online, cálculo de frete ou estoque reservado automaticamente.
+O comprador monta o carrinho e pode enviar um orçamento como visitante, informando nome, e-mail e telefone. Esse fluxo abre o WhatsApp e não grava pedidos anônimos no Supabase. Opcionalmente, pode entrar na conta para registrar o pedido; após a confirmação do banco, a tela mostra o número e o contato da loja, com histórico na conta. A equipe confirma valores, frete, arte, prazo e pagamento diretamente no atendimento. Não existe cobrança online, cálculo de frete ou estoque reservado automaticamente.
 
 O telefone de atendimento permanece `+55 61 98133-3737`, correspondente ao código original e à última página do catálogo de lançamentos. A logo não foi modificada.
