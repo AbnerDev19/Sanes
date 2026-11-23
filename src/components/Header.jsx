@@ -1,6 +1,7 @@
 import Brand from "./Brand";
 import { ArrowUpRight, UserRound, ShoppingBag, Menu, X } from "lucide-react";
-import { WHATSAPP as WA } from "../config";
+import { whatsappLink } from "../config";
+import { useStoreSettings } from "../lib/storeSettings";
 export default function Header({
   session,
   showAccount,
@@ -11,11 +12,12 @@ export default function Header({
   setCartOpen,
   setStep,
 }) {
+  const { whatsapp } = useStoreSettings();
   return (
     <>
       <div id="inicio" className="topline">
         <span>Feito para sua marca. Pensado para durar.</span>
-        <a href={`https://wa.me/${WA}`} target="_blank" rel="noreferrer">
+        <a href={whatsappLink(whatsapp)} target="_blank" rel="noreferrer">
           Atendimento personalizado <ArrowUpRight size={12} />
         </a>
       </div>

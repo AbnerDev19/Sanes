@@ -8,7 +8,7 @@ const catalog = JSON.parse(
 export const USER_ID = "00000000-0000-4000-8000-000000000001";
 export async function mockStore(
   page,
-  { failOrder = false, cartDelay = 0 } = {},
+  { failOrder = false, cartDelay = 0, whatsapp = null } = {},
 ) {
   const state = { cart: [], orders: [], calls: [], signedIn: false };
   const user = {
@@ -97,6 +97,10 @@ export async function mockStore(
     }
     if (url.pathname === "/rest/v1/products") return respond(rows);
     if (url.pathname === "/rest/v1/store_members") return respond([]);
+    if (url.pathname === "/rest/v1/store_settings")
+      return whatsapp
+        ? respond([{ whatsapp }])
+        : respond({ message: "relation does not exist" }, 404);
     if (url.pathname === "/rest/v1/profiles") {
       if (method === "GET")
         return respond([

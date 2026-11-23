@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import fallback from "../products";
-import { supabase, loadProducts } from "./supabase";
+import { supabase } from "./supabase";
 import { cleanCart, mergeCarts, combineCartItems } from "./commerce";
 const safeCart = (key, products) => {
   const items = cleanCart(read(key), products);
@@ -17,14 +16,15 @@ const read = (key) => {
     return [];
   }
 };
-export default function useStore() {
-  const [products, setProducts] = useState(fallback),
-    [catalogError, setCatalogError] = useState(""),
-    [revision, setRevision] = useState(0);
-  const [session, setSession] = useState(null),
+// Sessão, perfil, equipe e carrinho. Sessões anônimas (criadas só para enviar
+// logomarcas) contam como visitante: não sincronizam carrinho nem perfil.
+export default function useStore(products) {
+  const [rawSession, setSession] = useState(null),
     [authReady, setAuthReady] = useState(!supabase),
-    [recovery, setRecovery] = useState(false);
-  const [cart, setCart] = useState(() => safeCart("sanes-cart-v1", fallback));
+    [recovery, setRecovery] = useState(false),
+    [revision, setRevision] = useState(0);
+  const session = rawSession?.user?.is_anonymous ? null : rawSession;
+  const [cart, setCart] = useState(() => safeCart("sanes-cart-v1", products));
   const [profile, setProfile] = useState({
       name: "",
       company: "",
@@ -36,26 +36,6 @@ export default function useStore() {
     [staff, setStaff] = useState(false);
   const guestAtLogin = useRef([]),
     uid = session?.user.id;
-  useEffect(() => {
-    let active = true;
-    if (supabase)
-      loadProducts()
-        .then((data) => {
-          if (active) {
-            setProducts(data);
-            setCatalogError("");
-          }
-        })
-        .catch(() => {
-          if (active)
-            setCatalogError(
-              "Não foi possível atualizar o catálogo. Tente novamente antes de enviar seu pedido.",
-            );
-        });
-    return () => {
-      active = false;
-    };
-  }, [revision]);
   useEffect(() => {
     if (!supabase) return;
     let active = true;
@@ -181,8 +161,8 @@ export default function useStore() {
   const visibleCart =
     (!uid && cartOwner === null) || (uid && cartOwner === uid) ? cart : [];
   return {
-    products,
     session,
+    rawSession,
     authReady,
     recovery,
     setRecovery,
@@ -191,10 +171,7 @@ export default function useStore() {
     profile,
     staff,
     syncError,
-    catalogError,
-    retry: () => setRevision((n) => n + 1),
-    canOrder: Boolean(
-      supabase && session && cartOwner === uid && !catalogError,
-    ),
+    retrySync: () => setRevision((n) => n + 1),
+    cartReady: Boolean(supabase && session && cartOwner === uid),
   };
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase, getOrders, money, statusLabels } from "../lib/supabase";
 import { orderContactMessage } from "../lib/commerce";
+import { whatsappLink } from "../config";
 export default function AccountPanel({ session, staff, wa, onLogout }) {
   const [orders, setOrders] = useState([]),
     [loading, setLoading] = useState(true),
@@ -131,7 +132,7 @@ export default function AccountPanel({ session, staff, wa, onLogout }) {
           {!staff && (
             <a
               className="btn outline full"
-              href={`https://wa.me/${wa}?text=${encodeURIComponent(orderContactMessage(order))}`}
+              href={whatsappLink(wa, orderContactMessage(order))}
               target="_blank"
               rel="noreferrer"
             >

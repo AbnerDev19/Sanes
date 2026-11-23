@@ -1,8 +1,10 @@
 import { Check, ArrowLeft, MessageCircle } from "lucide-react";
-import { WHATSAPP as WA } from "../config";
+import { whatsappLink } from "../config";
+import { useStoreSettings } from "../lib/storeSettings";
 import { orderContactMessage } from "../lib/commerce";
 import { todayBrazil, formatBrazilianPhone } from "../lib/checkout";
 export default function Checkout({ state, actions }) {
+  const { whatsapp } = useStoreSettings();
   const {
     guestContact,
     placedOrder,
@@ -58,7 +60,7 @@ export default function Checkout({ state, actions }) {
       </p>
       <a
         className="btn primary full"
-        href={`https://wa.me/${WA}?text=${encodeURIComponent(orderContactMessage(placedOrder))}`}
+        href={whatsappLink(whatsapp, orderContactMessage(placedOrder))}
         target="_blank"
         rel="noreferrer"
       >

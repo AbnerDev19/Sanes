@@ -150,3 +150,11 @@ test("sign-out hides the signed-in cart from the next guest", async ({
     page.getByRole("button", { name: "Meu carrinho 0", exact: true }),
   ).toBeVisible();
 });
+
+test("WhatsApp de destino vem da configuração da loja", async ({ page }) => {
+  await mockStore(page, { whatsapp: "5511987654321" });
+  await page.goto("/");
+  await expect(
+    page.getByRole("link", { name: /Atendimento personalizado/ }),
+  ).toHaveAttribute("href", "https://wa.me/5511987654321");
+});
