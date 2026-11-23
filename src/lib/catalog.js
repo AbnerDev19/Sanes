@@ -21,10 +21,10 @@ export const LEGACY_CATEGORIES = {
   Acessórios: CATEGORIES[4],
   "Churrasco e Lazer": CATEGORIES[5],
 };
+// Categorias antigas viram as atuais; categorias criadas no painel são mantidas.
 export const normalizeCategory = (value) =>
-  CATEGORIES.includes(value)
-    ? value
-    : LEGACY_CATEGORIES[value] || "Categoria a revisar";
+  LEGACY_CATEGORIES[value] ||
+  (String(value || "").trim() ? String(value).trim() : "Categoria a revisar");
 export const FEATURED = [
   "SB-104",
   "SB-105",
@@ -53,9 +53,12 @@ export function filterCatalog(
       (category === "Todos os produtos" || p.categoria === category) &&
       (!maxMinimum ||
         (p.min_confirmed !== false && p.min <= Number(maxMinimum))) &&
-      fold(`${p.nome} ${p.categoria} ${p.codigo} ${p.desc}`).includes(term),
+      fold(
+        `${p.nome} ${p.categoria} ${p.codigo} ${p.desc} ${(p.colors || []).join(" ")}`,
+      ).includes(term),
   );
   const name = (a, b) => a.nome.localeCompare(b.nome, "pt-BR");
+  const order = (p) => (Number.isFinite(p.sort_order) ? p.sort_order : 999999);
   return result.sort(
     sort === "name"
       ? name
@@ -65,8 +68,9 @@ export function filterCatalog(
           ? (a, b) =>
               a.categoria.localeCompare(b.categoria, "pt-BR") || name(a, b)
           : (a, b) =>
-              (FEATURED.includes(a.id) ? FEATURED.indexOf(a.id) : 999) -
-              (FEATURED.includes(b.id) ? FEATURED.indexOf(b.id) : 999),
+              Number(Boolean(b.featured)) - Number(Boolean(a.featured)) ||
+              order(a) - order(b) ||
+              name(a, b),
   );
 }
 export const productHash = (id) => `#/produto/${encodeURIComponent(id)}`;

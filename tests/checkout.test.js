@@ -6,6 +6,7 @@ import {
   validPhone,
   formatBrazilianPhone,
   contactError,
+  contactErrors,
 } from "../src/lib/checkout.js";
 import { combineCartItems, mergeCarts } from "../src/lib/commerce.js";
 test("delivery dates use Brazil time and reject past or impossible dates", () => {
@@ -20,10 +21,24 @@ test("BR phone mask supports mobile, landline and pasted country code", () => {
   assert.ok(validPhone("(61) 98133-3737"));
   assert.ok(validPhone("(61) 3333-3737"));
   assert.ok(!validPhone("12345"));
-  assert.match(
-    contactError({ name: "Ana", email: "bad", phone: "61981333737" }),
-    /e-mail/,
-  );
+});
+test("identificação exige nome, telefone, cidade e UF; e-mail é opcional", () => {
+  const ok = {
+    name: "Ana Souza",
+    phone: "61981333737",
+    city: "Brasília",
+    state: "DF",
+  };
+  assert.deepEqual(contactErrors(ok), {});
+  assert.equal(contactError({ ...ok, email: "" }), "");
+  assert.match(contactError({ ...ok, email: "bad" }), /e-mail/);
+  assert.deepEqual(Object.keys(contactErrors({})).sort(), [
+    "city",
+    "name",
+    "phone",
+    "state",
+  ]);
+  assert.match(contactError({ ...ok, state: "XX" }), /estado/);
 });
 test("same personalization combines quantities without duplicating restored keys", () => {
   const a = {

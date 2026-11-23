@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { validateQuantity, makeMessage } from "../src/order.js";
+import { validateQuantity } from "../src/order.js";
 import products from "../src/products.js";
 test("enforces integer minimum quantities", () => {
   assert.equal(validateQuantity(29, 30), false);
@@ -8,41 +8,6 @@ test("enforces integer minimum quantities", () => {
   assert.equal(validateQuantity("", 30), false);
   assert.equal(validateQuantity("30", 30), true);
   assert.equal(validateQuantity(Infinity, 30), false);
-});
-test("keeps personalization, quantity, customer and attachment caveat in quote", () => {
-  const m = makeMessage(
-    [
-      {
-        id: "SB-001",
-        name: "Garrafa",
-        qty: 50,
-        color: "Azul",
-        method: "Laser",
-        text: "Logo & ação",
-        art: "logo.pdf",
-      },
-    ],
-    {
-      name: "Ana",
-      company: "Empresa",
-      email: "ana@example.com",
-      date: "2026-12-10",
-      notes: "Brasília",
-    },
-  );
-  for (const s of [
-    "SB-001",
-    "50",
-    "Azul",
-    "Laser",
-    "Logo & ação",
-    "logo.pdf",
-    "enviarei o arquivo",
-    "Ana",
-    "Brasília",
-  ])
-    assert.ok(m.includes(s));
-  assert.ok(!m.includes("undefined"));
 });
 test("catalog has unique identifiers and valid minimums", () => {
   assert.equal(products.length, 111);

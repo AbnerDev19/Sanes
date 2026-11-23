@@ -1,5 +1,5 @@
 import { ArrowLeft, MessageCircle, Plus } from "lucide-react";
-import ProductImage from "./ProductImage";
+import { ProductGallery } from "./ProductModal";
 import { money } from "../lib/supabase";
 import { productHash } from "../lib/catalog";
 export default function ProductPage({ product, onCustomize }) {
@@ -26,7 +26,7 @@ export default function ProductPage({ product, onCustomize }) {
       </a>
       <div className="product-page-grid">
         <div className="product-page-image">
-          <ProductImage p={product} />
+          <ProductGallery product={product} />
         </div>
         <div>
           <div className="eyebrow">
@@ -47,6 +47,18 @@ export default function ProductPage({ product, onCustomize }) {
               <>
                 <dt>Medidas</dt>
                 <dd>{product.dim}</dd>
+              </>
+            )}
+            {product.colors?.length > 0 && (
+              <>
+                <dt>Cores disponíveis</dt>
+                <dd>{product.colors.join(", ")}</dd>
+              </>
+            )}
+            {product.variants?.length > 0 && (
+              <>
+                <dt>Modelos</dt>
+                <dd>{product.variants.join(", ")}</dd>
               </>
             )}
           </dl>

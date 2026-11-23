@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Check, X } from "lucide-react";
 import ClickSpark from "./components/ClickSpark";
 import Header from "./components/Header";
@@ -14,7 +14,7 @@ import useStore from "./lib/useStore";
 import useCatalog from "./lib/useCatalog";
 import useReducedMotion from "./lib/useReducedMotion";
 import { useStoreSettings } from "./lib/storeSettings";
-import { CATEGORIES } from "./lib/catalog";
+import { deleteAttachments, pruneAttachments } from "./lib/attachments";
 import { cartTotals } from "./lib/commerce";
 import { SITE_TITLE, SITE_DESCRIPTION } from "./lib/seo";
 import useHashRoute from "./hooks/useHashRoute";
@@ -22,6 +22,26 @@ import useDialogFocus from "./hooks/useDialogFocus";
 import useCatalogFilters from "./hooks/useCatalogFilters";
 import useProductForm from "./hooks/useProductForm";
 import useCheckout from "./hooks/useCheckout";
+
+const AdminPage = lazy(() => import("./admin/AdminPage"));
+
+// Mantém só os arquivos ainda usados por algum carrinho salvo no navegador.
+function pruneStoredAttachments() {
+  const ids = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key?.startsWith("sanes-cart")) continue;
+      const items = JSON.parse(localStorage.getItem(key) || "[]");
+      if (Array.isArray(items))
+        for (const item of items)
+          for (const f of item?.files || []) if (f?.id) ids.push(f.id);
+    }
+  } catch {
+    return;
+  }
+  pruneAttachments(ids);
+}
 
 function useDocumentMeta(route, products) {
   useEffect(() => {
@@ -53,9 +73,10 @@ export default function App() {
   const reducedMotion = useReducedMotion();
   const route = useHashRoute(reducedMotion);
   const { whatsapp } = useStoreSettings();
-  const { products, catalogError, retryCatalog } = useCatalog();
+  const { products, categories, catalogError, retryCatalog } = useCatalog();
   const {
     session,
+    rawSession,
     authReady,
     recovery,
     setRecovery,
@@ -63,6 +84,7 @@ export default function App() {
     setCart,
     profile,
     staff,
+    staffChecked,
     syncError,
     retrySync,
     cartReady,
@@ -78,7 +100,9 @@ export default function App() {
   const filters = useCatalogFilters(products);
   const checkout = useCheckout({
     cart,
+    setCart,
     session,
+    rawSession,
     profile,
     canOrder: cartReady && !catalogError,
     whatsapp,
@@ -86,9 +110,9 @@ export default function App() {
   const productForm = useProductForm({
     cart,
     setCart,
-    onAdded: () => {
+    onAdded: (edited) => {
       checkout.reset();
-      setToast("Produto adicionado ao carrinho");
+      if (!edited) setToast("Produto adicionado ao carrinho");
     },
   });
 
@@ -104,6 +128,10 @@ export default function App() {
       : accountView;
   const dialog = useDialogFocus(view, closeAll);
 
+  useEffect(() => {
+    const timer = setTimeout(pruneStoredAttachments, 4000);
+    return () => clearTimeout(timer);
+  }, []);
   useEffect(() => {
     if (!recovery) return;
     productForm.close();
@@ -157,9 +185,40 @@ export default function App() {
     setCartOpen(false);
     setAccountView(session ? "account" : "auth");
   };
-  const total = cart.reduce((s, i) => s + i.qty, 0);
+  const editItem = (item) => {
+    const product = products.find((p) => p.id === item.id);
+    if (product) productForm.open(product, item);
+  };
+  const removeItem = (item) => {
+    setCart((c) => c.filter((i) => i.key !== item.key));
+    const ids = (item.files || []).map((f) => f.id);
+    if (ids.length) deleteAttachments(ids);
+    checkout.reset();
+  };
   const totals = cartTotals(cart, products);
   const notice = catalogError || syncError;
+
+  if (route.name === "admin")
+    return (
+      <Suspense
+        fallback={
+          <p className="admin-loading" role="status">
+            Carregando painel…
+          </p>
+        }
+      >
+        <AdminPage
+          route={route}
+          session={session}
+          authReady={authReady}
+          staff={staff}
+          staffChecked={staffChecked}
+          recovery={recovery}
+          onRecovered={() => setRecovery(false)}
+          onCatalogChange={retryCatalog}
+        />
+      </Suspense>
+    );
 
   return (
     <ClickSpark
@@ -207,7 +266,7 @@ export default function App() {
             reducedMotion={reducedMotion}
             catalog={{
               products,
-              categories: CATEGORIES,
+              categories,
               filters,
               onChoose: choose,
               onCustomize: productForm.open,
@@ -257,6 +316,7 @@ export default function App() {
                 product={productForm.product}
                 form={productForm.form}
                 onAdd={productForm.add}
+                editing={productForm.editing}
               />
             ) : view === "cart" ? (
               <CartDrawer
@@ -264,23 +324,20 @@ export default function App() {
                   cart,
                   step,
                   setStep,
-                  choose,
                   minimumFor,
                   updateQty,
-                  setCart,
-                  setCartOpen,
                   totals,
-                  total,
-                }}
-                checkoutState={{ ...checkout.state, authReady }}
-                checkoutActions={{
-                  ...checkout.actions,
-                  setCartOpen,
-                  setAccountView,
-                  setCart,
+                  checkout,
+                  session,
                   showAccount,
-                  setStep,
                 }}
+                onExplore={() => {
+                  setCartOpen(false);
+                  choose("Todos os produtos");
+                }}
+                onClose={() => setCartOpen(false)}
+                onEdit={editItem}
+                onRemove={removeItem}
               />
             ) : session && accountView === "account" ? (
               <AccountPanel

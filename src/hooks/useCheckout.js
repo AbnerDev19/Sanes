@@ -1,157 +1,199 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
-import { contactError, formatBrazilianPhone } from "../lib/checkout";
-import { makeMessage } from "../order";
+import { supabase, supabaseConfigured } from "../lib/supabase";
+import { contactErrors, formatBrazilianPhone } from "../lib/checkout";
 import { whatsappLink } from "../config";
+import { submitOrder, manualMessage, SubmitError } from "../lib/orderSubmit";
+import { deleteAttachments } from "../lib/attachments";
 
 export const EMPTY_CUSTOMER = {
   name: "",
   company: "",
-  email: "",
   phone: "",
   city: "",
-  date: "",
-  notes: "",
+  state: "",
+  email: "",
+  extra: "",
+};
+const SAVED = "sanes-customer-v1",
+  NOTES = "sanes-cart-notes-v1";
+
+const readJson = (key, fallback) => {
+  try {
+    return JSON.parse(localStorage.getItem(key) || "null") ?? fallback;
+  } catch {
+    return fallback;
+  }
+};
+const writeJson = (key, value) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {}
 };
 
-// Dados do cliente e envio do pedido (visitante pelo WhatsApp ou conta).
+// Identificação do cliente, observações gerais e finalização do pedido.
 export default function useCheckout({
   cart,
+  setCart,
   session,
+  rawSession,
   profile,
   canOrder,
   whatsapp,
 }) {
-  const [customer, setCustomer] = useState(EMPTY_CUSTOMER),
-    [guestContact, setGuestContact] = useState(""),
+  const [customer, setCustomerState] = useState(() => ({
+      ...EMPTY_CUSTOMER,
+      ...readJson(SAVED, {}),
+      extra: "",
+    })),
+    [notes, setNotesState] = useState(() => String(readJson(NOTES, ""))),
+    [fieldErrors, setFieldErrors] = useState({}),
     [submitting, setSubmitting] = useState(false),
-    [checkoutError, setCheckoutError] = useState(""),
-    [placedOrder, setPlacedOrder] = useState(null);
+    [progress, setProgress] = useState(""),
+    [error, setError] = useState(null),
+    [result, setResult] = useState(null);
+
+  const setCustomer = (next) => {
+    setCustomerState(next);
+    const { extra, email, ...keep } = next;
+    if (!session) writeJson(SAVED, keep);
+  };
+  const setNotes = (value) => {
+    setNotesState(value);
+    writeJson(NOTES, value);
+  };
+
+  // Conta conectada: preenche com o perfil salvo.
   useEffect(() => {
-    setPlacedOrder(null);
-    setGuestContact("");
-    setCheckoutError("");
-    setCustomer(EMPTY_CUSTOMER);
-  }, [session?.user.id]);
-  useEffect(() => {
-    if (session)
-      setCustomer((c) => ({
-        ...c,
-        name: c.name || profile.name || session.user.user_metadata?.name || "",
-        company: c.company || profile.company || "",
-        email: session.user.email || "",
-        phone: c.phone || formatBrazilianPhone(profile.phone || ""),
-        city: c.city || profile.city || "",
-      }));
+    setResult(null);
+    setError(null);
+    setFieldErrors({});
+    if (!session) {
+      setCustomerState((c) => ({ ...c, email: "" }));
+      return;
+    }
+    setCustomerState((c) => ({
+      ...c,
+      name: profile.name || session.user.user_metadata?.name || c.name,
+      company: profile.company || c.company,
+      phone: formatBrazilianPhone(profile.phone || c.phone || ""),
+      city: profile.city || c.city,
+      email: session.user.email || "",
+    }));
   }, [session?.user.id, profile]);
 
-  const reset = () => {
-    setPlacedOrder(null);
-    setGuestContact("");
+  const combinedNotes = [notes.trim(), customer.extra.trim()]
+    .filter(Boolean)
+    .join("\n\n")
+    .slice(0, 1500);
+  const fileCount = cart.reduce((s, i) => s + (i.files?.length || 0), 0);
+
+  const openManual = () => {
+    const link = whatsappLink(
+      whatsapp,
+      manualMessage({ cart, customer, notes: combinedNotes }),
+    );
+    setError(null);
+    setResult({ link, saved: false, manualFiles: fileCount });
+    window.open(link, "_blank", "noopener,noreferrer");
   };
 
   const send = async (e) => {
-    e.preventDefault();
-    setCheckoutError("");
-    const invalid = contactError(customer);
-    if (invalid) {
-      setCheckoutError(invalid);
-      return;
-    }
-    if (!session) {
-      const link = whatsappLink(whatsapp, makeMessage(cart, customer));
-      setGuestContact(link);
-      window.open(link, "_blank", "noopener,noreferrer");
-      return;
-    }
-    if (!canOrder) {
-      setCheckoutError(
-        "Não foi possível preparar seu pedido. Atualize sua conta e o catálogo antes de continuar.",
+    e?.preventDefault();
+    if (submitting) return;
+    setError(null);
+    const errors = contactErrors(customer);
+    setFieldErrors(errors);
+    if (Object.keys(errors).length) {
+      setError({
+        message: "Confira os campos destacados.",
+        canFallback: false,
+      });
+      requestAnimationFrame(() =>
+        document.querySelector("[aria-invalid=true]")?.focus(),
       );
       return;
     }
-    if (submitting) return;
+    if (!supabaseConfigured) {
+      openManual();
+      return;
+    }
+    if (session && !canOrder) {
+      setError({
+        message:
+          "Sua conta ainda está sincronizando. Aguarde um instante e tente novamente.",
+        canFallback: true,
+      });
+      return;
+    }
     setSubmitting(true);
     try {
-      const { error: profileError } = await supabase.from("profiles").upsert({
-        id: session.user.id,
-        name: customer.name.trim(),
-        company: customer.company,
-        phone: customer.phone,
-        city: customer.city,
-        updated_at: new Date().toISOString(),
+      if (session)
+        supabase
+          .from("profiles")
+          .upsert({
+            id: session.user.id,
+            name: customer.name.trim(),
+            company: customer.company.trim(),
+            phone: customer.phone,
+            city: customer.city.trim(),
+            updated_at: new Date().toISOString(),
+          })
+          .then(() => {});
+      const { order, message } = await submitOrder({
+        cart,
+        customer,
+        notes: combinedNotes,
+        rawSession: session || rawSession,
+        onProgress: setProgress,
       });
-      if (profileError)
-        throw new Error(
-          "Não foi possível salvar seus dados de contato. Tente novamente.",
-        );
-      const storageKey = `sanes-pending-order-${session.user.id}`;
-      const fingerprint = JSON.stringify(cart);
-      let pending;
-      try {
-        pending = JSON.parse(localStorage.getItem(storageKey) || "null");
-      } catch {}
-      if (!pending || pending.fingerprint !== fingerprint)
-        pending = { fingerprint, key: crypto.randomUUID() };
-      try {
-        localStorage.setItem(storageKey, JSON.stringify(pending));
-      } catch {}
-      const { data, error } = await supabase.rpc("place_order", {
-        p_request_key: pending.key,
-        p_items: cart.map(({ id, qty, color, method, text, art }) => ({
-          id,
-          qty,
-          color,
-          method,
-          text,
-          art,
-        })),
-        p_customer: {
-          name: customer.name,
-          company: customer.company,
-          phone: customer.phone,
-          city: customer.city,
-          date: customer.date,
-          notes: customer.notes,
-        },
+      setResult({
+        link: whatsappLink(whatsapp, message),
+        saved: true,
+        number: order.number,
+        manualFiles: 0,
       });
-      if (error)
-        throw new Error(
-          "Não foi possível registrar o pedido. Confira as quantidades e a disponibilidade dos itens e tente novamente. Seu carrinho foi preservado.",
-        );
-      setPlacedOrder(data);
-      try {
-        localStorage.removeItem(storageKey);
-      } catch {}
-    } catch (error) {
-      setCheckoutError(
-        error.message ||
-          "Não foi possível registrar seu pedido. Tente novamente.",
-      );
+    } catch (err) {
+      setError({
+        message: `${err.message || "Não foi possível enviar o pedido."} Seu carrinho foi preservado.`,
+        canFallback: err instanceof SubmitError ? err.canFallback : true,
+      });
     } finally {
       setSubmitting(false);
+      setProgress("");
     }
   };
 
+  const startOver = () => {
+    const ids = cart.flatMap((i) => (i.files || []).map((f) => f.id));
+    if (ids.length) deleteAttachments(ids);
+    setCart([]);
+    setNotes("");
+    setCustomerState((c) => ({ ...c, extra: "" }));
+    setResult(null);
+    setError(null);
+  };
+
   return {
-    state: {
-      guestContact,
-      placedOrder,
-      customer,
-      session,
-      submitting,
-      checkoutError,
+    customer,
+    setCustomer,
+    notes,
+    setNotes,
+    fieldErrors,
+    submitting,
+    progress,
+    error,
+    result,
+    fileCount,
+    send,
+    openManual,
+    startOver,
+    reset: () => {
+      setResult(null);
+      setError(null);
     },
-    actions: {
-      setGuestContact,
-      setPlacedOrder,
-      setCustomer,
-      send,
-    },
-    reset,
     clearCustomer: () => {
-      setPlacedOrder(null);
-      setCustomer(EMPTY_CUSTOMER);
+      setResult(null);
+      setCustomerState({ ...EMPTY_CUSTOMER, ...readJson(SAVED, {}) });
     },
   };
 }

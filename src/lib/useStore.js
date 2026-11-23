@@ -33,7 +33,8 @@ export default function useStore(products) {
     }),
     [syncError, setSyncError] = useState(""),
     [cartOwner, setCartOwner] = useState(null),
-    [staff, setStaff] = useState(false);
+    [staff, setStaff] = useState(false),
+    [staffChecked, setStaffChecked] = useState(false);
   const guestAtLogin = useRef([]),
     uid = session?.user.id;
   useEffect(() => {
@@ -68,6 +69,7 @@ export default function useStore(products) {
     setCartOwner(null);
     setSyncError("");
     setStaff(false);
+    setStaffChecked(false);
     if (!uid) {
       const guest = safeCart("sanes-cart-v1", products);
       guestAtLogin.current = guest;
@@ -104,6 +106,7 @@ export default function useStore(products) {
           },
         );
         setStaff(Boolean(member.data));
+        setStaffChecked(true);
         setCartOwner(uid);
         // Consume guest cart only after successful hydration. An account switch cannot
         // expose the previous account's cart to the new account.
@@ -114,6 +117,7 @@ export default function useStore(products) {
       })
       .catch(() => {
         if (active) {
+          setStaffChecked(true);
           setCart(local);
           setSyncError(
             "Não foi possível sincronizar sua conta. Seu carrinho local foi preservado. Tente novamente.",
@@ -170,6 +174,7 @@ export default function useStore(products) {
     setCart,
     profile,
     staff,
+    staffChecked,
     syncError,
     retrySync: () => setRevision((n) => n + 1),
     cartReady: Boolean(supabase && session && cartOwner === uid),

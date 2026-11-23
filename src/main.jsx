@@ -6,6 +6,7 @@ import "@fontsource-variable/manrope";
 import "./style.css";
 import "./responsive.css";
 import "./commerce.css";
+import "./order.css";
 
 createRoot(document.getElementById("root")).render(
   <StoreSettingsProvider>

@@ -32,6 +32,7 @@ async function setup() {
     "202611170001_store.sql",
     "202611170002_order_contact_validation.sql",
     "202611230003_catalog_admin_uploads.sql",
+    "202611230004_admin_ordering.sql",
   ])
     await db.exec(await migration(name));
   await db.query(
@@ -276,6 +277,36 @@ test("conta confirmada usa o e-mail da conta e há limite de pedidos", async () 
       JSON.stringify(customer),
     ]),
     /Muitos pedidos/,
+  );
+  await db.close();
+});
+
+test("equipe reordena produtos e categorias; visitante não", async () => {
+  const { db, as } = await setup();
+  await as(GUEST, true);
+  await assert.rejects(
+    db.query("select public.reorder_products($1)", [["SB-002", "SB-001"]]),
+    /restrito/,
+  );
+  await as(OWNER);
+  await db.query("select public.reorder_products($1)", [["SB-002", "SB-001"]]);
+  await db.query("select public.reorder_categories($1)", [
+    ["Canetas", "Térmicos e bebidas"],
+  ]);
+  const rows = (
+    await db.query("select id,sort_order from public.products order by id")
+  ).rows;
+  assert.deepEqual(
+    rows.map((r) => r.sort_order),
+    [2, 1],
+  );
+  assert.equal(
+    (
+      await db.query(
+        "select sort_order from public.categories where name='Canetas'",
+      )
+    ).rows[0].sort_order,
+    1,
   );
   await db.close();
 });

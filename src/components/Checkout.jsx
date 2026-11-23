@@ -1,154 +1,145 @@
-import { Check, ArrowLeft, MessageCircle } from "lucide-react";
-import { whatsappLink } from "../config";
-import { useStoreSettings } from "../lib/storeSettings";
-import { orderContactMessage } from "../lib/commerce";
-import { todayBrazil, formatBrazilianPhone } from "../lib/checkout";
-export default function Checkout({ state, actions }) {
-  const { whatsapp } = useStoreSettings();
-  const {
-    guestContact,
-    placedOrder,
-    customer,
-    session,
-    submitting,
-    authReady,
-    checkoutError,
-  } = state;
-  const {
-    setGuestContact,
-    setCartOpen,
-    setAccountView,
-    setCart,
-    setPlacedOrder,
-    send,
-    setCustomer,
-    showAccount,
-    setStep,
-  } = actions;
-  return guestContact ? (
-    <section className="order-success">
-      <h3>Orçamento preparado</h3>
-      <p>
-        O WhatsApp abrirá com os itens e seus dados. Envie a mensagem para
-        solicitar atendimento. Como visitante, este orçamento não fica salvo no
-        histórico.
-      </p>
-      <a
-        className="btn primary full"
-        href={guestContact}
-        target="_blank"
-        rel="noreferrer"
-      >
-        Abrir orçamento no WhatsApp
-      </a>
-      <button
-        className="text-link full center"
-        onClick={() => setGuestContact("")}
-      >
-        Voltar aos dados
-      </button>
-    </section>
-  ) : placedOrder ? (
-    <section className="order-success">
+import {
+  Check,
+  ArrowLeft,
+  MessageCircle,
+  Paperclip,
+  ShieldCheck,
+} from "lucide-react";
+import { UFS, formatBrazilianPhone } from "../lib/checkout";
+import { supabaseConfigured } from "../lib/supabase";
+
+function Field({ id, label, error, hint, children }) {
+  return (
+    <label htmlFor={id} className={error ? "invalid" : ""}>
+      {label}
+      {hint && <small>{hint}</small>}
+      {children}
+      {error && (
+        <span className="field-error" id={`${id}-error`}>
+          {error}
+        </span>
+      )}
+    </label>
+  );
+}
+
+function Success({ checkout, onClose }) {
+  const { result } = checkout;
+  return (
+    <section className="order-success" aria-live="polite">
       <span className="success-check">
         <Check size={28} />
       </span>
-      <h3>Pedido #{placedOrder.number} registrado!</h3>
+      <h3>
+        {result.saved
+          ? `Pedido #${result.number} pronto para envio`
+          : "Pedido pronto para envio"}
+      </h3>
       <p>
-        Ele já está salvo na sua conta. Agora continue a conversa com a loja
-        para confirmar valores, arte, prazo e pagamento.
+        Toque no botão abaixo: o WhatsApp da Sanes abre com o pedido completo já
+        escrito. É só enviar a mensagem.
       </p>
       <a
         className="btn primary full"
-        href={whatsappLink(whatsapp, orderContactMessage(placedOrder))}
+        href={result.link}
         target="_blank"
         rel="noreferrer"
       >
-        Continuar atendimento no WhatsApp <MessageCircle size={18} />
+        Enviar pedido pelo WhatsApp <MessageCircle size={18} />
       </a>
+      {result.manualFiles > 0 ? (
+        <p className="attach-reminder" role="note">
+          <Paperclip size={16} aria-hidden="true" />
+          <span>
+            <strong>Não esqueça das logomarcas:</strong> o WhatsApp não anexa
+            arquivos automaticamente. Depois de enviar a mensagem, anexe{" "}
+            {result.manualFiles === 1
+              ? "o arquivo"
+              : `os ${result.manualFiles} arquivos`}{" "}
+            na mesma conversa (ícone de clipe).
+          </span>
+        </p>
+      ) : (
+        result.saved && (
+          <p className="field-help">
+            Suas logomarcas foram enviadas com segurança e os links já estão na
+            mensagem.
+          </p>
+        )
+      )}
       <button
         className="text-link full center"
         onClick={() => {
-          setCartOpen(false);
-          setAccountView("account");
+          checkout.startOver();
+          onClose();
         }}
       >
-        Ver meus pedidos
-      </button>
-      <button
-        className="text-link full center"
-        onClick={() => {
-          setCart([]);
-          setPlacedOrder(null);
-          setCartOpen(false);
-        }}
-      >
-        Iniciar novo carrinho
+        Já enviei · iniciar novo pedido
       </button>
       <small className="field-help">
-        Pedido registrado não significa pagamento ou confirmação da compra.
-        Anexe suas artes na conversa do WhatsApp.
+        Pedido enviado não significa compra confirmada: a Sanes retorna com
+        valores, arte, prazo e pagamento.
       </small>
     </section>
-  ) : (
-    <form onSubmit={send}>
-      <button className="text-link" type="button" onClick={() => setStep(1)}>
+  );
+}
+
+export default function Checkout({
+  checkout,
+  session,
+  showAccount,
+  onBack,
+  onClose,
+  missingFiles,
+}) {
+  const { customer, setCustomer, fieldErrors: errors, error } = checkout;
+  if (checkout.result) return <Success checkout={checkout} onClose={onClose} />;
+  const field = (name) => ({
+    id: `customer-${name}`,
+    "aria-invalid": errors[name] ? true : undefined,
+    "aria-describedby": errors[name] ? `customer-${name}-error` : undefined,
+    value: customer[name],
+    onChange: (e) => setCustomer({ ...customer, [name]: e.target.value }),
+  });
+  return (
+    <form onSubmit={checkout.send} noValidate>
+      <button className="text-link" type="button" onClick={onBack}>
         <ArrowLeft size={15} /> Voltar aos brindes
       </button>
-      <h3>Vamos nos conhecer?</h3>
+      <h3>Para quem é o pedido?</h3>
       <p className="field-help">
         {session
-          ? `Conectado como ${session.user.email}. O pedido ficará registrado na sua conta.`
-          : "Envie o orçamento como visitante ou entre para registrar o pedido no seu histórico."}
+          ? `Conectado como ${session.user.email}. O pedido também fica no seu histórico.`
+          : "Sem cadastro: só precisamos de um contato para o atendimento."}
       </p>
-      <label>
-        Seu nome *
+      <Field id="customer-name" label="Nome completo *" error={errors.name}>
         <input
+          {...field("name")}
+          autoComplete="name"
           required
           maxLength={100}
-          value={customer.name}
-          onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
         />
-      </label>
-      <label>
-        Empresa
+      </Field>
+      <Field id="customer-company" label="Empresa" hint="opcional">
         <input
+          {...field("company")}
+          autoComplete="organization"
           maxLength={120}
-          value={customer.company}
-          onChange={(e) =>
-            setCustomer({
-              ...customer,
-              company: e.target.value,
-            })
-          }
         />
-      </label>
-      <label>
-        E-mail *
+      </Field>
+      <Field
+        id="customer-phone"
+        label="Telefone / WhatsApp *"
+        error={errors.phone}
+      >
         <input
-          type="email"
-          autoComplete="email"
-          required
-          maxLength={150}
-          readOnly={Boolean(session)}
-          value={customer.email}
-          onChange={(e) =>
-            setCustomer({
-              ...customer,
-              email: e.target.value,
-            })
-          }
-        />
-      </label>
-      <label>
-        Telefone / WhatsApp *
-        <input
+          {...field("phone")}
           type="tel"
-          autoComplete="tel"
+          autoComplete="tel-national"
           inputMode="tel"
           required
-          maxLength={19}
-          value={customer.phone}
+          maxLength={16}
+          placeholder="(61) 98133-3737"
           onChange={(e) =>
             setCustomer({
               ...customer,
@@ -156,69 +147,100 @@ export default function Checkout({ state, actions }) {
             })
           }
         />
-      </label>
-      <label>
-        Cidade de entrega
-        <input
-          autoComplete="address-level2"
-          maxLength={120}
-          value={customer.city}
-          onChange={(e) => setCustomer({ ...customer, city: e.target.value })}
-        />
-      </label>
-      <label>
-        Quando você precisa receber?
-        <input
-          type="date"
-          min={todayBrazil()}
-          value={customer.date}
-          onChange={(e) => setCustomer({ ...customer, date: e.target.value })}
-        />
-      </label>
-      <label>
-        Algum detalhe especial?
+      </Field>
+      <div className="form-row city-row">
+        <Field id="customer-city" label="Cidade *" error={errors.city}>
+          <input
+            {...field("city")}
+            autoComplete="address-level2"
+            required
+            maxLength={120}
+          />
+        </Field>
+        <Field id="customer-state" label="Estado *" error={errors.state}>
+          <select {...field("state")} autoComplete="address-level1" required>
+            <option value="">UF</option>
+            {UFS.map((uf) => (
+              <option key={uf}>{uf}</option>
+            ))}
+          </select>
+        </Field>
+      </div>
+      <Field id="customer-extra" label="Observações adicionais" hint="opcional">
         <textarea
-          placeholder="Cidade de entrega, ocasião, prazo…"
-          maxLength={1200}
-          value={customer.notes}
-          onChange={(e) =>
-            setCustomer({
-              ...customer,
-              notes: e.target.value,
-            })
-          }
+          {...field("extra")}
+          maxLength={700}
+          placeholder="Melhor horário para contato, CNPJ para orçamento…"
         />
-      </label>
-      {checkoutError && (
-        <p className="error" role="alert">
-          {checkoutError}
+      </Field>
+      {checkout.fileCount > 0 && (
+        <p className="secure-note">
+          {supabaseConfigured ? (
+            <>
+              <ShieldCheck size={16} aria-hidden="true" />
+              {checkout.fileCount === 1
+                ? "1 logomarca será enviada"
+                : `${checkout.fileCount} logomarcas serão enviadas`}{" "}
+              com segurança e o link irá na mensagem.
+            </>
+          ) : (
+            <>
+              <Paperclip size={16} aria-hidden="true" />
+              Depois de abrir o WhatsApp, anexe{" "}
+              {checkout.fileCount === 1
+                ? "a logomarca"
+                : `as ${checkout.fileCount} logomarcas`}{" "}
+              na conversa.
+            </>
+          )}
         </p>
+      )}
+      {missingFiles > 0 && (
+        <p className="error" role="alert">
+          Algum arquivo anexado não está neste aparelho. Volte aos brindes,
+          edite o item e anexe novamente.
+        </p>
+      )}
+      {error && (
+        <div className="error" role="alert">
+          <p>{error.message}</p>
+          {error.canFallback && (
+            <button
+              type="button"
+              className="btn outline full"
+              onClick={checkout.openManual}
+            >
+              Enviar pelo WhatsApp sem registrar (anexo os arquivos na conversa)
+            </button>
+          )}
+        </div>
       )}
       <button
         className="btn primary full"
         type="submit"
-        disabled={submitting || !authReady}
+        disabled={checkout.submitting || missingFiles > 0}
       >
-        {submitting
-          ? "Registrando pedido…"
-          : session
-            ? "Registrar pedido"
-            : "Solicitar orçamento pelo WhatsApp"}{" "}
+        {checkout.submitting
+          ? checkout.progress || "Enviando…"
+          : "Finalizar pedido"}{" "}
         <MessageCircle size={18} />
       </button>
+      {checkout.submitting && (
+        <p className="sr-only" role="status">
+          {checkout.progress}
+        </p>
+      )}
       <p className="field-help">
-        {session
-          ? "O pedido será salvo na sua conta antes do atendimento."
-          : "Login opcional: entre para salvar o histórico dos pedidos."}{" "}
-        Valores, prazo e compra são confirmados com a loja.
+        Ao finalizar, o WhatsApp da Sanes abre com o pedido completo. Valores,
+        prazo e pagamento são combinados no atendimento.
       </p>
-      {!session && (
+      {!session && supabaseConfigured && (
         <button
           className="text-link full center"
           type="button"
           onClick={showAccount}
         >
-          Entrar ou criar conta para salvar histórico
+          Tem conta? Entre para guardar o histórico (opcional)
         </button>
       )}
     </form>

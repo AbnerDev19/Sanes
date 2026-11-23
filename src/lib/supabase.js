@@ -47,7 +47,31 @@ export function mapProduct(p) {
     imagem: p.image_url,
     source_document: p.source_document,
     source_page: p.source_page,
+    colors: stringList(p.colors),
+    variants: stringList(p.variants),
+    gallery: stringList(p.gallery),
+    featured: Boolean(p.featured),
+    sort_order: Number.isFinite(p.sort_order) ? p.sort_order : 0,
+    active: p.active !== false,
   };
+}
+const stringList = (value) =>
+  Array.isArray(value)
+    ? value
+        .filter((v) => typeof v === "string" && v.trim())
+        .map((v) => v.trim())
+    : [];
+
+export async function loadCategories() {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from("categories")
+    .select("name,sort_order")
+    .eq("active", true)
+    .order("sort_order")
+    .order("name");
+  if (error) throw error;
+  return data.map((c) => c.name);
 }
 export async function loadProducts() {
   if (!supabase) return null;
@@ -57,6 +81,7 @@ export async function loadProducts() {
       .from("products")
       .select("*")
       .eq("active", true)
+      .order("sort_order")
       .order("id")
       .range(start, start + 499);
     if (error) throw error;
@@ -69,7 +94,7 @@ export async function getOrders(offset = 0) {
   if (!supabase) throw new Error("Atendimento temporariamente indisponível.");
   const { data, error } = await supabase
     .from("orders")
-    .select("*,order_items(*)")
+    .select("*,order_items(*),order_files(*)")
     .order("created_at", { ascending: false })
     .order("id", { ascending: false })
     .range(offset, offset + 49);
