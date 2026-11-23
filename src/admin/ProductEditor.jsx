@@ -137,7 +137,9 @@ export default function ProductEditor({ id, onSaved }) {
               ...found,
               dimensions: found.dimensions || "",
               unit_price:
-                found.unit_price === null ? "" : String(found.unit_price),
+                found.unit_price === null || found.unit_price === undefined
+                  ? ""
+                  : Number(found.unit_price).toFixed(2).replace(".", ","),
               image_url: found.image_url || "",
             });
         }

@@ -1,59 +1,108 @@
 # Sanes Brindes
 
-Catálogo React/Vite para brindes personalizados, preparado para Supabase Auth, catálogo, carrinhos por cliente, pedidos e atendimento da loja via WhatsApp.
+Catálogo digital e sistema de pedidos personalizados da Sanes Brindes. O cliente navega pelo catálogo, escolhe quantidades, cores e modelos, anexa a logomarca e envia o pedido completo para o WhatsApp do Júnior. A equipe gerencia catálogo, pedidos e configurações em um painel administrativo.
+
+- **Loja:** React 19 + Vite 6, publicada no GitHub Pages.
+- **Backend:** Supabase (Auth, Postgres com RLS, funções RPC e Storage).
+- **Sem backend configurado,** a loja continua funcionando: catálogo local e pedido pelo WhatsApp com anexo manual dos arquivos.
+
+## Funcionalidades
+
+**Loja**
+
+- Catálogo com busca sem acento, abas de categoria, filtro por pedido mínimo, ordenação, destaques e página própria por produto (`#/produto/SB-104`), com galeria, cores e modelos.
+- Personalização de cada item:
+  - quantidade, respeitando o mínimo do produto;
+  - uma ou mais cores, com divisão opcional da quantidade entre elas;
+  - modelo ou variação e técnica de gravação;
+  - observações;
+  - até 5 logomarcas (PNG, JPG ou PDF, até 10 MB cada), com pré-visualização e opção de substituir ou remover.
+- Carrinho com edição de itens, alteração de quantidade, remoção e observações gerais.
+- Identificação simples: nome, empresa (opcional), telefone, cidade/UF e observações. Não exige conta.
+- Finalização:
+  1. as logomarcas vão para um bucket **privado** do Supabase;
+  2. o pedido é registrado pela função `submit_order`, que valida tudo no servidor;
+  3. o WhatsApp abre com a mensagem **NOVO PEDIDO — SANES BRINDES**, com links dos arquivos válidos por 30 dias e o link do pedido no painel.
+
+  Se o registro falhar, o cliente pode enviar a mensagem sem registro e anexar os arquivos manualmente na conversa.
+- Conta de cliente **opcional**, que guarda o histórico de pedidos.
+
+**Painel (`#/admin`, só para a equipe)**
+
+- **Pedidos:** busca, filtro e status; detalhes com links para ver e baixar as logomarcas.
+- **Produtos:** criar, editar, excluir, fotos, cores, modelos, preço, ativar/desativar, destacar e ordenar.
+- **Categorias:** criar, renomear, ocultar, ordenar e excluir.
+- **Configurações:** número de WhatsApp que recebe os pedidos.
+
+Guia de uso para a loja: [docs/GUIA-JUNIOR.md](docs/GUIA-JUNIOR.md).
 
 ## Desenvolvimento
 
 ```sh
 npm ci
 npm run dev
-npm test
-npm run test:responsive
+npm test                 # unitários + SQL (PGlite)
+npm run test:responsive  # navegador (Playwright + axe)
 npm run build
 ```
 
-O runner de navegador local usa `/usr/bin/chromium`. Para usar o navegador do Playwright, execute `npx playwright install chromium` e rode os testes com `CI=true`; também é possível definir `PLAYWRIGHT_CHROMIUM_EXECUTABLE`.
+Os testes de navegador usam `/usr/bin/chromium` por padrão. Para usar outro navegador, defina `PLAYWRIGHT_CHROMIUM_EXECUTABLE` ou rode com `CI=true` depois de `npx playwright install chromium`.
 
-## Supabase e produção
+## Configuração (Supabase e GitHub)
 
-Siga [supabase/README.md](supabase/README.md) para migração, importação, autenticação, equipe e publicação. O segundo PDF fornecido ainda está pendente porque excede o limite de transferência; o cadastro remoto também depende da conexão confirmada com o projeto. **Não foi concluída uma importação no Supabase nem ativado login em produção nesta etapa.**
+O passo a passo completo está em **[supabase/GUIA-ABNER.md](supabase/GUIA-ABNER.md)**:
 
-```sh
-npm run catalog:import
-npm run build:production
-```
+1. aplicar as migrações 001 a 004 no SQL Editor;
+2. ligar o login anônimo, usado no upload das logomarcas de visitantes;
+3. dar acesso de equipe ao Júnior;
+4. importar o catálogo;
+5. cadastrar as variáveis públicas no GitHub;
+6. fazer o teste final.
 
-O build de produção exige as configurações públicas reais e recusa publicar enquanto o catálogo fornecido estiver incompleto. O catálogo consolidado de desenvolvimento contém 111 produtos, dos quais 24 têm imagem do PDF de lançamentos. Os preços seguem sob consulta, sem valores inventados. A logo foi preservada.
+Variáveis públicas, todas com prefixo `VITE_`, listadas em `.env.example`: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `WHATSAPP`, `SITE_URL` e os dados da empresa. A build recusa chaves privilegiadas.
 
-## Arquivos principais
+**Número do WhatsApp:**
 
-- `catalog/products.json`: base consolidada e referência aos PDFs.
-- `catalog/import-report.json`: relatório de importação e pendências.
-- `supabase/migrations/`: schema, RLS e funções de pedidos.
-- `scripts/import-supabase.mjs`: importador privado de produtos e imagens.
-- `src/lib/useStore.js`: catálogo, sessão e sincronização de carrinhos.
-- `src/lib/commerce.js`: normalização do carrinho e mensagem de atendimento.
-- `src/components/AuthPanel.jsx` e `AccountPanel.jsx`: conta e histórico/atendimento.
-- `src/main.jsx`: interface, personalização e finalização.
-- `src/responsive.css` e `commerce.css`: adaptações para celular e novos fluxos.
-- `app/index.html`: HTML fonte. O `index.html` da raiz e `assets/` são gerados para o Pages.
+- O número em uso fica na tabela `store_settings` e é alterado pelo painel.
+- `VITE_WHATSAPP` e o valor em `src/config.js` são só reservas, usadas quando o banco não está disponível.
+- Esses são os únicos lugares do código com o número.
 
-O visitante pode solicitar orçamento com nome, e-mail e telefone diretamente pelo WhatsApp, sem login e sem gravar pedido anônimo no banco. O login é opcional para salvar histórico; nesse fluxo, o pedido é validado e salvo no servidor antes do contato. O carrinho de visitante é separado dos carrinhos das contas. Artes selecionadas são referências de nome; o arquivo é anexado pelo cliente na conversa com a loja. Valores, arte, frete, prazo e pagamento são confirmados pela equipe.
+## Organização
 
-### Publicação automática no Pages
+| Caminho | Conteúdo |
+|---|---|
+| `app/index.html` | HTML de origem. O `index.html` e a pasta `assets/` na raiz são **gerados** para o Pages |
+| `src/main.jsx`, `src/App.jsx` | Entrada e composição da loja |
+| `src/pages/`, `src/components/` | Telas e componentes (catálogo, produto, carrinho, checkout, conta) |
+| `src/hooks/` | Rotas, foco de diálogos, filtros, formulário do produto, checkout |
+| `src/lib/commerce.js` | Regras do carrinho e mensagem do pedido |
+| `src/lib/orderSubmit.js` | Upload das logomarcas, `submit_order` e links temporários |
+| `src/lib/attachments.js` | Arquivos guardados no navegador (IndexedDB) e verificação de tipo real |
+| `src/lib/useCatalog.js`, `useStore.js`, `storeSettings.jsx` | Catálogo, sessão/carrinho e configurações da loja |
+| `src/admin/` | Painel administrativo, carregado sob demanda |
+| `supabase/migrations/` | Schema, RLS, Storage e funções (001 a 004) |
+| `scripts/` | Importador do catálogo, checagem de produção, preparo do Pages e SEO |
+| `tests/` | Unitários, SQL e navegador (`tests/browser/`, com Supabase simulado) |
 
-O workflow `.github/workflows/pages.yml` compila o código atual e publica `dist/` quando a variável do repositório `PAGES_ACTIONS_ENABLED` é `true`. Para ativar: em **Settings → Pages → Source**, selecione **GitHub Actions**, e em **Settings → Secrets and variables → Actions → Variables**, defina `PAGES_ACTIONS_ENABLED=true`. As variáveis públicas opcionais são `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_WHATSAPP` e `VITE_SITE_URL`; nunca use uma chave privilegiada.
+## Segurança
 
-A integração desta conversa recebe HTTP 403 ao tentar alterar a configuração do Pages. Enquanto o modo legado continuar ativo, o workflow verifica que `index.html` e `assets/` correspondem ao build atual, para impedir divergências silenciosas. `npm run build:pages` atualiza esses arquivos para publicação legada.
+- O cliente nunca envia preço nem status. `submit_order` recalcula tudo no servidor e não registra o mesmo pedido duas vezes, mesmo se o envio for repetido.
+- Logomarcas:
+  - ficam no bucket privado `order-files`, e cada visitante só grava e lê a própria pasta;
+  - a equipe acessa por links temporários;
+  - o bucket aceita só PNG, JPG ou PDF de até 10 MB;
+  - o site confere a assinatura real do arquivo, não só a extensão;
+  - há limite de 40 arquivos por dia e 10 pedidos por hora por visitante.
+- Escrita no catálogo, nas categorias e nas configurações é permitida só a `store_members` com conta não anônima.
 
-## Revisão para publicação
+## Publicação no Pages
 
-As seis prioridades foram implementadas, com testes unitários, SQL local, acessibilidade automatizada e fluxos de navegador. Esses testes não equivalem a uma certificação WCAG nem à validação de um Supabase remoto.
+`.github/workflows/pages.yml` compila e publica `dist/` quando a variável `PAGES_ACTIONS_ENABLED` é `true` (recomendado; veja o guia). No modo legado, o workflow exige que `index.html` e `assets/` da raiz correspondam ao build atual: `npm run build:pages` atualiza esses arquivos.
 
-- 111 produtos em seis categorias; 24 imagens WebP reais (largura máxima 804px) e 87 placeholders “Foto em breve”. Não há preços inventados.
-- Orçamento como visitante funciona sem Supabase. Para conta e histórico, configure o projeto e aplique as duas migrações em ordem.
-- `npm run build:pages` gera o catálogo publicável e atualiza HTML, assets, favicon, robots e sitemap da raiz. O comando estrito `build:production` continua exigindo a conclusão da importação remota e do PDF pendente.
-- Configure `VITE_WHATSAPP` e `VITE_SITE_URL` conforme o ambiente. Endereço, CNPJ, horário e e-mail ficam vazios em `.env.example`; preencha somente dados confirmados.
-- A FAQ está marcada na interface como conteúdo provisório para revisão. Após revisar as respostas em `src/business.js`, altere `FAQ_REVIEW_PENDING`.
-- Links de produto usam `#/produto/SB-104`. O compartilhamento abre o produto, mas a prévia social e o sitemap usam a página geral: robôs não recebem HTML exclusivo por hash.
-- A arte não é transmitida pelo site: o cliente deve anexá-la no WhatsApp.
+## Estado do catálogo
+
+- 111 produtos em seis categorias. 24 têm foto real; os demais mostram "Foto em breve".
+- Não há preços inventados: aparece "Sob consulta" até a loja cadastrar um preço.
+- Cores, modelos e fotos novas são cadastrados pelo painel.
+- O PDF "SUGESTÕES DE BRINDES 2026" ainda não foi importado (passou do limite de envio) e está registrado em `catalog/import-report.json`. Enquanto isso, `npm run build:production` continua bloqueado de propósito.
+- A FAQ está marcada como provisória (`FAQ_REVIEW_PENDING` em `src/business.js`).

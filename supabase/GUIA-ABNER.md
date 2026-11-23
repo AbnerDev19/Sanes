@@ -27,13 +27,14 @@ Este guia prepara o banco de dados, o login, o armazenamento das logomarcas e a 
 
 ## 2. Aplicar as migrações no SQL Editor
 
-Os arquivos estão na pasta `supabase/migrations/` do repositório. Aplique **um por vez e nesta ordem**:
+Os arquivos estão na pasta `supabase/migrations/` do repositório. Aplique **um por vez e nesta ordem**. Se você já aplicou 001 a 003, rode só o 004:
 
 | Ordem | Arquivo | O que faz |
 |---|---|---|
 | 1 | `202611170001_store.sql` | Produtos, perfis, carrinhos, pedidos, equipe e bucket público `catalog` |
 | 2 | `202611170002_order_contact_validation.sql` | Validação de telefone e data nos pedidos de contas |
 | 3 | `202611230003_catalog_admin_uploads.sql` | Categorias, cores, modelos, destaques, ordem, número do WhatsApp, pedidos de visitante, bucket privado `order-files` e permissões do painel |
+| 4 | `202611230004_admin_ordering.sql` | Ordenação de produtos e categorias pelo painel |
 
 Para cada arquivo:
 
@@ -46,6 +47,7 @@ Cada arquivo roda dentro de `begin; … commit;`. Se der erro, nada daquele arqu
 
 **Verificação:**
 
+- Em **Database → Functions** aparecem `submit_order`, `reorder_products` e `reorder_categories`.
 - O **Table Editor** mostra as tabelas `products`, `categories`, `store_settings`, `orders`, `order_items`, `order_files`, `profiles`, `carts` e `store_members`.
 - `store_settings` tem uma linha com `whatsapp = 5561981333737`.
 - `categories` tem 6 linhas.
@@ -104,7 +106,7 @@ select u.email, m.role from public.store_members m join auth.users u on u.id = m
 
 O resultado deve mostrar o e-mail do Júnior com `owner`.
 
-> O painel administrativo (`#/admin`) está em desenvolvimento. Depois que for publicado, o Júnior entra com esse mesmo e-mail e senha. Não existe tela pública para virar administrador: o acesso só é dado por este comando SQL.
+> O Júnior entra no painel em `https://abnerdev19.github.io/Sanes/#/admin` com esse e-mail e senha. Não existe tela pública para virar administrador: o acesso só é dado por este comando SQL. O guia de uso do painel está em `docs/GUIA-JUNIOR.md`.
 
 ---
 
@@ -162,7 +164,7 @@ Use **Variables**, não Secrets: esses valores são públicos e vão para o site
 
 ## 7. Teste final
 
-> As etapas 1 a 6 podem ser feitas **agora**: a versão atual do site continua funcionando com o banco novo. Os itens de upload e painel abaixo só funcionam depois que a nova versão do site for publicada; aviso quando estiver pronta.
+> Os itens abaixo dependem da nova versão do site publicada (branch `claude/hopeful-hawking-hdctua` incorporada à `main`).
 
 Abra o site publicado em uma janela anônima do navegador e confira:
 
@@ -173,6 +175,10 @@ Abra o site publicado em uma janela anônima do navegador e confira:
 - [ ] O link do arquivo na mensagem abre a logomarca. O link é temporário, válido por 30 dias.
 - [ ] Copie o endereço de um arquivo do bucket `order-files` **sem** o token e abra: o acesso deve ser **negado**.
 - [ ] Crie uma conta de cliente comum, confirme o e-mail, entre e faça um pedido. Ele aparece em "Minha conta".
+- [ ] Entre em `#/admin` com a conta do Júnior: o pedido de teste aparece em **Pedidos**, com o botão **Ver** da logomarca.
+- [ ] Em **Configurações**, salve o número e use **Testar conversa**.
+- [ ] Em **Produtos**, edite um produto (ex.: adicione uma cor) e confira na loja.
+- [ ] Apague os pedidos de teste: **Table Editor → orders** (os itens e arquivos ligados saem junto; os arquivos do Storage podem ser apagados em **Storage → order-files**).
 
 Se algum item falhar, me envie o print da tela e a mensagem de erro, de preferência do console do navegador (F12 → Console). **Antes de enviar, apague qualquer chave secreta que apareça no print.**
 
@@ -180,7 +186,7 @@ Se algum item falhar, me envie o print da tela e a mensagem de erro, de preferê
 
 ## Resumo do que me enviar quando terminar
 
-1. Confirmação de que as 3 migrações rodaram sem erro (ou a mensagem de erro).
+1. Confirmação de que as 4 migrações rodaram sem erro (ou a mensagem de erro).
 2. Confirmação de que "Allow anonymous sign-ins" está ligado.
 3. Confirmação de que as variáveis do GitHub foram criadas e o workflow passou.
 4. O resultado do teste final.
