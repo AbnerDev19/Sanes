@@ -1,0 +1,349 @@
+/* Personalização, carrinho e finalização do pedido (mesma identidade visual). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Galeria */
+.gallery-thumbs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.gallery-thumbs button {
+  width: 54px;
+  height: 54px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+.gallery-thumbs button.active {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold);
+}
+.gallery-thumbs img,
+.gallery-thumbs .photo-placeholder {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+.gallery-thumbs .photo-placeholder span {
+  display: none;
+}
+
+/* Cores */
+.choice-group {
+  border: 0;
+  padding: 0;
+  margin: 15px 0;
+  min-width: 0;
+}
+.choice-group legend {
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  padding: 0;
+  width: 100%;
+}
+.choice-group legend small,
+.attachments-label small,
+.cart-notes small {
+  float: right;
+  color: var(--muted);
+  font-weight: 400;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 38px;
+  padding: 7px 14px;
+  border: 1px solid #d6d8cc;
+  border-radius: 999px;
+  background: #fff;
+  color: #3e4237;
+  font-size: 13px;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+.chip:hover {
+  border-color: var(--gold);
+}
+.chip.on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+.modal-content label.inline-check,
+form label.inline-check {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 12px 0 4px;
+  font-size: 13px;
+}
+.modal-content .inline-check input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--gold);
+  flex: none;
+}
+.color-split {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 0 10px;
+  padding: 4px 12px 10px;
+  margin-top: 8px;
+  border-radius: 8px;
+  background: #f3f3ee;
+}
+.color-split label {
+  margin: 10px 0 0;
+}
+.color-split small {
+  grid-column: 1 / -1;
+  margin-top: 8px;
+  font-size: 12px;
+}
+.split-ok {
+  color: #2f6b3a;
+}
+.split-pending {
+  color: var(--gold-text);
+}
+
+/* Logomarcas */
+.attachments {
+  margin: 15px 0;
+}
+.attachments-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+.attachment-list,
+.cart-files {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.attachment-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+.attachment-thumb {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  background: #f0f0ea;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: #6b6f60;
+}
+.attachment-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.attachment-thumb.missing {
+  color: #a3541b;
+}
+.attachment-name {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+}
+.attachment-name strong {
+  font-size: 13px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.attachment-name small {
+  font-size: 12px;
+  color: var(--muted);
+}
+.attachment-list .icon {
+  flex: none;
+}
+
+/* Carrinho */
+.cart-item-actions {
+  display: flex;
+  gap: 4px;
+}
+.cart-item-details {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 10px;
+  margin: 8px 0;
+  font-size: 13px;
+}
+.cart-item-details dt {
+  color: var(--muted);
+}
+.cart-item-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.cart-files li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 13px;
+  min-width: 0;
+}
+.cart-files li > span:not(.attachment-thumb) {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cart-files .attachment-thumb {
+  width: 32px;
+  height: 32px;
+}
+.cart-files small {
+  width: 100%;
+  color: #a3541b;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.no-logo {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.cart-drawer label.cart-notes {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  margin: 18px 0 6px;
+}
+.cart-notes textarea {
+  display: block;
+  width: 100%;
+  min-height: 70px;
+  margin-top: 7px;
+  padding: 11px 12px;
+  border: 1px solid #dedfd6;
+  border-radius: 5px;
+  background: #fff;
+  font-size: 14px;
+  resize: vertical;
+}
+
+/* Finalização */
+form label.invalid input,
+form label.invalid select,
+form label.invalid textarea {
+  border-color: #b42318;
+}
+.field-error {
+  display: block;
+  margin-top: 5px;
+  color: #b42318;
+  font-size: 12px;
+}
+form label small {
+  float: right;
+  font-weight: 400;
+  color: var(--muted);
+}
+form select {
+  display: block;
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #dedfd6;
+  background: white;
+  border-radius: 5px;
+  margin-top: 7px;
+  font-size: 14px;
+  color: #53574c;
+}
+.city-row label:last-child {
+  flex: 0 0 96px;
+}
+.secure-note,
+.attach-reminder {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 11px 12px;
+  border-radius: 8px;
+  background: #f4f0e4;
+  color: #4d3e14;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.secure-note svg,
+.attach-reminder svg {
+  flex: none;
+  margin-top: 3px;
+}
+div.error p {
+  margin: 0 0 4px;
+}
+div.error .btn {
+  margin-top: 8px;
+  white-space: normal;
+  height: auto;
+  min-height: 44px;
+  padding-block: 10px;
+  line-height: 1.4;
+}
+
+.product-badge.featured {
+  background: var(--ink);
+  color: #fff;
+}
+.product-colors {
+  display: block;
+  margin-top: -4px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--gold-text);
+}
+
+@media (max-width: 767px) {
+  .chip,
+  .cart-notes textarea,
+  form select {
+    font-size: 16px;
+  }
+}

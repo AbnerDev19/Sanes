@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { supabase, getOrders, money, statusLabels } from "../lib/supabase";
-import { orderContactMessage } from "../lib/commerce";
+import {
+  orderContactMessage,
+  orderToMessageItems,
+  colorSummary,
+} from "../lib/commerce";
+import { whatsappLink } from "../config";
 export default function AccountPanel({ session, staff, wa, onLogout }) {
   const [orders, setOrders] = useState([]),
     [loading, setLoading] = useState(true),
@@ -56,6 +61,11 @@ export default function AccountPanel({ session, staff, wa, onLogout }) {
         {staff ? "Atendimento da loja" : "Meus pedidos"}
       </h2>
       <p className="account-email">{session.user.email}</p>
+      {staff && (
+        <a className="btn primary full" href="#/admin">
+          Abrir painel administrativo
+        </a>
+      )}
       <div className="account-actions">
         <button className="text-link" onClick={reload} disabled={loading}>
           Atualizar pedidos
@@ -108,17 +118,23 @@ export default function AccountPanel({ session, staff, wa, onLogout }) {
             </p>
           )}
           <ul>
-            {order.order_items?.map((item) => (
-              <li key={item.id}>
-                {item.quantity} × {item.product_name}
+            {orderToMessageItems(order).map((item, n) => (
+              <li key={order.order_items[n].id}>
+                {item.qty} × {item.name}
                 <small>
-                  {item.color} · {item.method}
+                  {[
+                    colorSummary(item.colors) || "Cor a definir",
+                    item.variant,
+                    item.method,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
                 </small>
-                {item.details && (
-                  <small className="item-note">{item.details}</small>
-                )}
-                {item.art_name && (
-                  <small>Referência de arte: {item.art_name}</small>
+                {item.text && <small className="item-note">{item.text}</small>}
+                {item.files.length > 0 && (
+                  <small>
+                    Logomarca: {item.files.map((f) => f.name).join(", ")}
+                  </small>
                 )}
               </li>
             ))}
@@ -131,7 +147,7 @@ export default function AccountPanel({ session, staff, wa, onLogout }) {
           {!staff && (
             <a
               className="btn outline full"
-              href={`https://wa.me/${wa}?text=${encodeURIComponent(orderContactMessage(order))}`}
+              href={whatsappLink(wa, orderContactMessage(order))}
               target="_blank"
               rel="noreferrer"
             >

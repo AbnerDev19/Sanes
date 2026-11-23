@@ -1,7 +1,9 @@
 import { ArrowUpRight, MessageCircle } from "lucide-react";
 import GradientText from "./GradientText";
-import { WHATSAPP as WA } from "../config";
+import { whatsappLink } from "../config";
+import { useStoreSettings } from "../lib/storeSettings";
 export default function MarketingSections() {
+  const { whatsapp } = useStoreSettings();
   return (
     <>
       <section className="personalization wrap" id="personalizacao">
@@ -96,7 +98,10 @@ export default function MarketingSections() {
         <div>
           <a
             className="btn gold"
-            href={`https://wa.me/${WA}?text=${encodeURIComponent("Olá! Quero criar um projeto personalizado com a Sanes Brindes.")}`}
+            href={whatsappLink(
+              whatsapp,
+              "Olá! Quero criar um projeto personalizado com a Sanes Brindes.",
+            )}
             target="_blank"
             rel="noreferrer"
           >

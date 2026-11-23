@@ -35,13 +35,51 @@ export function validDeliveryDate(value, now = new Date()) {
     value >= todayBrazil(now)
   );
 }
-export function contactError(customer, now = new Date()) {
-  if (!customer.name?.trim()) return "Informe seu nome.";
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email || ""))
-    return "Informe um e-mail válido.";
+export const UFS = [
+  "AC",
+  "AL",
+  "AP",
+  "AM",
+  "BA",
+  "CE",
+  "DF",
+  "ES",
+  "GO",
+  "MA",
+  "MT",
+  "MS",
+  "MG",
+  "PA",
+  "PB",
+  "PR",
+  "PE",
+  "PI",
+  "RJ",
+  "RN",
+  "RS",
+  "RO",
+  "RR",
+  "SC",
+  "SP",
+  "SE",
+  "TO",
+];
+
+// Retorna { campo: mensagem } com os problemas do formulário do cliente.
+export function contactErrors(customer) {
+  const errors = {};
+  const name = String(customer.name || "").trim();
+  if (name.length < 2) errors.name = "Informe seu nome completo.";
   if (!validPhone(customer.phone))
-    return "Informe um telefone brasileiro com DDD, por exemplo (61) 98133-3737.";
-  if (!validDeliveryDate(customer.date, now))
-    return "A data desejada não pode ser passada ou inválida.";
-  return "";
+    errors.phone = "Informe um telefone com DDD, por exemplo (61) 98133-3737.";
+  if (String(customer.city || "").trim().length < 2)
+    errors.city = "Informe a cidade.";
+  if (!UFS.includes(customer.state)) errors.state = "Selecione o estado.";
+  if (customer.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email))
+    errors.email = "Informe um e-mail válido ou deixe em branco.";
+  return errors;
+}
+
+export function contactError(customer) {
+  return Object.values(contactErrors(customer))[0] || "";
 }

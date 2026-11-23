@@ -1,30 +1,97 @@
+// Regras do carrinho e da mensagem do pedido. Sem dependências de navegador:
+// também roda nos testes do Node.
+export const MAX_QTY = 100000;
+export const MAX_FILES_PER_ITEM = 5;
+export const MAX_FILES_PER_ORDER = 20;
+export const MAX_FILE_BYTES = 10 * 1024 * 1024;
+export const FILE_TYPES = ["image/png", "image/jpeg", "application/pdf"];
+const LEGACY_PLACEHOLDERS = /^(a definir|outra\b)/i;
+
+const text = (value, max) =>
+  String(value ?? "")
+    .replace(/\r\n/g, "\n")
+    .trim()
+    .slice(0, max);
+
+export function cleanColors(colors, qty) {
+  if (!Array.isArray(colors)) return [];
+  const seen = new Set();
+  const rows = colors.slice(0, 20).flatMap((c) => {
+    const name = text(typeof c === "string" ? c : c?.name, 60);
+    if (!name || seen.has(name.toLocaleLowerCase("pt-BR"))) return [];
+    seen.add(name.toLocaleLowerCase("pt-BR"));
+    const n = Number(c?.qty);
+    return [{ name, qty: Number.isSafeInteger(n) && n > 0 ? n : null }];
+  });
+  // Distribuição por cor só vale se não ultrapassar o total do item.
+  const split = rows.reduce((s, c) => s + (c.qty || 0), 0);
+  return split > qty ? rows.map((c) => ({ ...c, qty: null })) : rows;
+}
+
+export function cleanFiles(files) {
+  if (!Array.isArray(files)) return [];
+  return files.slice(0, MAX_FILES_PER_ITEM).flatMap((f) =>
+    typeof f?.id === "string" &&
+    /^[A-Za-z0-9-]{8,60}$/.test(f.id) &&
+    FILE_TYPES.includes(f.type) &&
+    Number.isSafeInteger(f.size) &&
+    f.size > 0 &&
+    f.size <= MAX_FILE_BYTES
+      ? [
+          {
+            id: f.id,
+            name: text(f.name, 160) || "arquivo",
+            type: f.type,
+            size: f.size,
+          },
+        ]
+      : [],
+  );
+}
+
 export function cleanCart(items, products) {
   if (!Array.isArray(items)) return [];
   const byId = new Map(products.map((p) => [p.id, p]));
   return items.slice(0, 100).flatMap((item, index) => {
-    const p = byId.get(item.id);
+    const p = byId.get(item?.id);
     if (
       !p ||
       !Number.isSafeInteger(item.qty) ||
       item.qty < p.min ||
-      item.qty > 100000
+      item.qty > MAX_QTY
     )
       return [];
+    // Itens salvos pela versão anterior: cor em texto e só o nome da arte.
+    const legacyColor =
+      typeof item.color === "string" && !LEGACY_PLACEHOLDERS.test(item.color)
+        ? [item.color]
+        : [];
+    const method = text(item.method, 80);
+    let notes = text(item.text, 1200);
+    if (item.art && !Array.isArray(item.files))
+      notes = text(
+        `${notes}${notes ? "\n" : ""}Arte de referência: ${item.art} (enviar no WhatsApp)`,
+        1200,
+      );
     return [
       {
         id: p.id,
         name: p.nome,
         key:
-          typeof item.key === "string" ? item.key : `restored-${index}-${p.id}`,
+          typeof item.key === "string" && item.key
+            ? item.key.slice(0, 80)
+            : `restored-${index}-${p.id}`,
         qty: item.qty,
-        color: String(item.color || "A definir").slice(0, 80),
-        method: String(item.method || "A definir com a equipe").slice(0, 80),
-        text: String(item.text || "").slice(0, 1200),
-        art: String(item.art || "").slice(0, 255),
+        colors: cleanColors(item.colors ?? legacyColor, item.qty),
+        variant: text(item.variant, 80),
+        method: LEGACY_PLACEHOLDERS.test(method) ? "" : method,
+        text: notes,
+        files: cleanFiles(item.files),
       },
     ];
   });
 }
+
 export function mergeCarts(remote, local, products) {
   const all = cleanCart(remote, products);
   const keys = new Set(all.map((i) => i.key));
@@ -35,6 +102,40 @@ export function mergeCarts(remote, local, products) {
     }
   return combineCartItems(all);
 }
+
+export function personalizationKey(item) {
+  return JSON.stringify([
+    item.id,
+    (item.colors || []).map((c) => [c.name, c.qty || null]),
+    ...["variant", "method", "text"].map((field) => text(item[field], 1200)),
+    (item.files || []).map((f) => f.id),
+  ]);
+}
+
+// Itens idênticos (mesma personalização e mesmos arquivos) somam quantidades.
+export function combineCartItems(items) {
+  const rows = new Map();
+  for (const item of items) {
+    const key = personalizationKey(item),
+      previous = rows.get(key);
+    if (previous && !(item.colors || []).some((c) => c.qty)) {
+      if (previous.qty + item.qty > MAX_QTY)
+        throw new Error(
+          "A quantidade total desse item não pode ultrapassar 100.000 unidades.",
+        );
+      previous.qty += item.qty;
+    } else rows.set(previous ? `${key}-${item.key}` : key, { ...item });
+  }
+  if (rows.size > 100)
+    throw new Error("O carrinho aceita até 100 personalizações diferentes.");
+  const all = [...rows.values()];
+  if (all.reduce((s, i) => s + (i.files?.length || 0), 0) > MAX_FILES_PER_ORDER)
+    throw new Error(
+      `Envie no máximo ${MAX_FILES_PER_ORDER} arquivos por pedido.`,
+    );
+  return all;
+}
+
 export function cartTotals(cart, products) {
   const index = new Map(products.map((p) => [p.id, p]));
   let total = 0;
@@ -49,51 +150,112 @@ export function cartTotals(cart, products) {
     total: cart.length && priced ? total / 100 : null,
   };
 }
-export function orderContactMessage(order) {
-  return [
-    `Olá, Sanes! Quero atendimento para o pedido #${order.number}.`,
-    `Referência: ${order.id}`,
-    `Nome: ${order.customer.name}`,
-    `E-mail da conta: ${order.customer.email}`,
-    order.customer.phone && `Telefone: ${order.customer.phone}`,
-    order.customer.company && `Empresa: ${order.customer.company}`,
-    order.customer.city && `Cidade: ${order.customer.city}`,
-    order.customer.date && `Data desejada: ${order.customer.date}`,
+
+export const colorSummary = (colors) =>
+  (colors || [])
+    .map((c) => (c.qty ? `${c.name} (${c.qty})` : c.name))
+    .join(", ");
+
+export const fileSize = (bytes) =>
+  bytes >= 1024 * 1024
+    ? `${(bytes / 1024 / 1024).toFixed(1).replace(".", ",")} MB`
+    : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+
+/**
+ * Mensagem do pedido no modelo da Sanes.
+ * fileLinks: Map(idDoArquivo → link). Arquivos sem link são marcados para
+ * envio manual na conversa.
+ */
+export function buildOrderMessage({
+  items,
+  customer,
+  notes = "",
+  orderNumber = null,
+  fileLinks = new Map(),
+  adminLink = "",
+  storedFiles = false,
+}) {
+  let manual = 0;
+  const lines = ["NOVO PEDIDO — SANES BRINDES"];
+  if (orderNumber) lines.push(`Pedido nº ${orderNumber}`);
+  lines.push(
     "",
-    ...(order.order_items || []).map(
-      (i) =>
-        `${i.product_id} — ${i.product_name}\nQuantidade: ${i.quantity}\nCor: ${i.color}\nTécnica: ${i.method}${i.details ? "\nDetalhes: " + i.details : ""}${i.art_name ? "\nArte: " + i.art_name + " (enviarei o arquivo na conversa)" : ""}`,
-    ),
-    order.customer.notes && `Observações: ${order.customer.notes}`,
-    "Aguardo a confirmação de valores, disponibilidade, arte e prazo.",
-  ]
-    .filter(Boolean)
-    .join("\n");
+    "CLIENTE:",
+    `Nome: ${text(customer.name, 100)}`,
+    `Empresa: ${text(customer.company, 120) || "Não informada"}`,
+    `Telefone: ${text(customer.phone, 30)}`,
+    `Cidade: ${[text(customer.city, 120), text(customer.state, 2)].filter(Boolean).join("/")}`,
+  );
+  if (customer.email) lines.push(`E-mail: ${text(customer.email, 150)}`);
+  lines.push("", "PRODUTOS SOLICITADOS:");
+  items.forEach((item, n) => {
+    lines.push(
+      "",
+      `Produto ${n + 1}: ${item.name} (${item.id})`,
+      `Quantidade: ${item.qty} unidades`,
+      `Cor: ${colorSummary(item.colors) || "A definir"}`,
+      `Modelo: ${item.variant || "Padrão"}`,
+    );
+    if (item.method) lines.push(`Personalização: ${item.method}`);
+    const files = item.files || [];
+    if (!files.length) lines.push("Logomarca: Não enviada");
+    files.forEach((f, i) => {
+      const link = fileLinks.get(f.id);
+      if (!link && !storedFiles) manual++;
+      const where = link
+        ? ` — ${link}`
+        : storedFiles
+          ? " (enviada pelo site)"
+          : " (vou anexar nesta conversa)";
+      lines.push(
+        `${files.length > 1 ? `Logomarca ${i + 1}` : "Logomarca"}: ${f.name}${where}`,
+      );
+    });
+    lines.push(`Observações: ${text(item.text, 1200) || "Nenhuma"}`);
+  });
+  lines.push("", "OBSERVAÇÕES GERAIS:", text(notes, 1500) || "Nenhuma");
+  if (manual)
+    lines.push(
+      "",
+      manual === 1
+        ? "Vou enviar o arquivo da logomarca nesta conversa."
+        : `Vou enviar os ${manual} arquivos de logomarca nesta conversa.`,
+    );
+  if (adminLink) lines.push("", `Pedido completo: ${adminLink}`);
+  lines.push("", "Aguardo retorno para dar continuidade ao atendimento!");
+  return lines.join("\n");
 }
-export function personalizationKey(item) {
-  return JSON.stringify([
-    item.id,
-    ...["color", "method", "text", "art"].map((field) =>
-      String(item[field] || "")
-        .replace(/\r\n/g, "\n")
-        .trim(),
-    ),
-  ]);
+
+// Pedido salvo no banco → itens no formato da mensagem.
+export function orderToMessageItems(order) {
+  const files = order.order_files || [];
+  return (order.order_items || []).map((i) => ({
+    id: i.product_id,
+    name: i.product_name,
+    qty: i.quantity,
+    colors:
+      Array.isArray(i.colors) && i.colors.length
+        ? i.colors
+        : i.color && !LEGACY_PLACEHOLDERS.test(i.color)
+          ? [{ name: i.color }]
+          : [],
+    variant: i.variant || "",
+    method: LEGACY_PLACEHOLDERS.test(i.method || "") ? "" : i.method || "",
+    text: i.details || "",
+    files: files
+      .filter((f) => f.order_item_id === i.id)
+      .map((f) => ({ id: f.id, name: f.file_name })),
+  }));
 }
-export function combineCartItems(items) {
-  const rows = new Map();
-  for (const item of items) {
-    const key = personalizationKey(item),
-      previous = rows.get(key);
-    if (previous) {
-      if (previous.qty + item.qty > 100000)
-        throw new Error(
-          "A quantidade total desse item não pode ultrapassar 100.000 unidades.",
-        );
-      previous.qty += item.qty;
-    } else rows.set(key, { ...item });
-  }
-  if (rows.size > 100)
-    throw new Error("O carrinho aceita até 100 personalizações diferentes.");
-  return [...rows.values()];
+
+export function orderContactMessage(order, { adminLink = "" } = {}) {
+  const c = order.customer || {};
+  return buildOrderMessage({
+    items: orderToMessageItems(order),
+    customer: c,
+    notes: c.notes || "",
+    orderNumber: order.number,
+    adminLink,
+    storedFiles: true,
+  });
 }

@@ -64,16 +64,17 @@ for (const width of [320, 360, 390, 430, 768, 1024, 1440]) {
     await expect(page.getByRole("dialog")).toBeVisible();
     await fits(page);
     await page
-      .getByLabel("O que você imagina?")
+      .getByLabel("Observações")
       .fill(
         "Uma personalização para o evento da empresa com uma frase longa e a marca em destaque.",
       );
     if (width < 768)
       expect(
         await page
-          .getByLabel("O que você imagina?")
+          .getByLabel("Observações")
           .evaluate((el) => getComputedStyle(el).fontSize),
       ).toBe("16px");
+    await page.getByLabel("Modelo *").selectOption("750 ml");
     await page
       .getByRole("button", { name: "Adicionar ao carrinho", exact: true })
       .click();
@@ -94,14 +95,9 @@ for (const width of [320, 360, 390, 430, 768, 1024, 1440]) {
       page.getByLabel("Quantidade de Garrafa Térmica Munique", { exact: true }),
     ).toHaveValue("31");
     await page.getByRole("button", { name: "Continuar", exact: true }).click();
-    await page
-      .getByLabel("Seu nome *", { exact: true })
-      .fill("Teste de responsividade");
+    await page.getByLabel("Nome completo *").fill("Teste de responsividade");
     await expect(
-      page.getByRole("button", {
-        name: "Solicitar orçamento pelo WhatsApp",
-        exact: true,
-      }),
+      page.getByRole("button", { name: /Finalizar pedido/ }),
     ).toBeVisible();
     await fits(page);
     await page.getByRole("button", { name: "Fechar", exact: true }).click();

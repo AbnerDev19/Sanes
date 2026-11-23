@@ -15,7 +15,11 @@ export default function ProductCard({
       data-reveal-delay={(i % 3) * 85}
     >
       <div className={"product-picture tone-" + (i % 4)}>
-        {p.imagem && <span className="product-badge">{p.capacidade}</span>}
+        {p.featured ? (
+          <span className="product-badge featured">Destaque</span>
+        ) : (
+          p.imagem && <span className="product-badge">{p.capacidade}</span>
+        )}
         <button
           className="product-image-button"
           onClick={() => open(p)}
@@ -39,6 +43,13 @@ export default function ProductCard({
           {p.capacidade || "Especificação a confirmar"}
         </small>
         <p>{p.desc}</p>
+        {p.colors?.length > 0 && (
+          <small className="product-colors">
+            {p.colors.length === 1
+              ? "1 cor disponível"
+              : `${p.colors.length} cores disponíveis`}
+          </small>
+        )}
         <div className="product-bottom">
           <div>
             <strong>
