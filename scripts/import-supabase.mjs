@@ -15,8 +15,12 @@ const db = createClient(url, key, {
 const products = JSON.parse(
   await readFile(path.join(root, "catalog/products.json"), "utf8"),
 );
+// Por padrão só cadastra produtos novos: o que a equipe editar no painel
+// administrativo não é sobrescrito. Use --update para regravar textos e fotos.
+const overwrite = process.argv.includes("--update");
+const FEATURED = ["SB-104", "SB-105", "SB-106", "SB-068", "SB-086", "SB-078"];
 let uploaded = 0;
-for (const product of products) {
+for (const [index, product] of products.entries()) {
   let image_url = null;
   if (product.imagem) {
     const relative = product.imagem.replace(/^assets\//, "");
@@ -44,8 +48,14 @@ for (const product of products) {
     source_document: product.source_document || "Base original enviada",
     source_page: product.source_page || null,
   };
-  // Do not overwrite store-managed prices or availability on re-import.
-  const { error } = await db.from("products").upsert(row, { onConflict: "id" });
+  if (!overwrite) {
+    row.sort_order = index + 1;
+    row.featured = FEATURED.includes(product.id);
+  }
+  // Preços, disponibilidade, cores, modelos e destaques ficam com a loja.
+  const { error } = await db
+    .from("products")
+    .upsert(row, { onConflict: "id", ignoreDuplicates: !overwrite });
   if (error) throw new Error(`Product ${product.id}: ${error.message}`);
 }
 console.log(
