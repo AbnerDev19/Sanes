@@ -1,3 +1,4 @@
+import { appPath } from "../lib/routes";
 import {
   ArrowUpRight,
   ArrowRight,
@@ -58,10 +59,10 @@ export default function Hero({ reducedMotion }) {
           Design, cuidado e personalização em cada detalhe.
         </p>
         <div className="hero-actions">
-          <a className="btn primary" href="#catalogo">
+          <a className="btn primary" href={appPath("#catalogo")}>
             Encontre seu brinde <ArrowUpRight size={17} />
           </a>
-          <a className="text-link" href="#personalizacao">
+          <a className="text-link" href={appPath("#personalizacao")}>
             Do seu jeito <ArrowRight size={16} />
           </a>
         </div>

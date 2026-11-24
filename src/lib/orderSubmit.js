@@ -1,8 +1,7 @@
 import { supabase, siteUrl } from "./supabase";
 import { getAttachment, extensionFor } from "./attachments";
-import { buildOrderMessage } from "./commerce";
+import { buildOrderMessage, singleLine } from "./commerce";
 
-export const LINK_DAYS = 30;
 const PENDING_KEY = "sanes-pending-order";
 
 export class SubmitError extends Error {
@@ -12,7 +11,7 @@ export class SubmitError extends Error {
   }
 }
 
-export const adminOrderLink = (id) => `${siteUrl()}#/admin/pedidos/${id}`;
+export const adminOrderLink = (id) => `${siteUrl()}admin/pedidos/${id}`;
 
 // Mensagem sem registro no sistema: arquivos vão anexados à mão na conversa.
 export function manualMessage({ cart, customer, notes }) {
@@ -38,9 +37,11 @@ export function clearPendingOrder() {
   } catch {}
 }
 
-async function ensureUser(rawSession) {
+async function ensureUser(rawSession, captchaToken) {
   if (rawSession?.user?.id) return rawSession.user.id;
-  const { data, error } = await supabase.auth.signInAnonymously();
+  const { data, error } = await supabase.auth.signInAnonymously(
+    captchaToken ? { options: { captchaToken } } : undefined,
+  );
   if (error || !data?.user?.id)
     throw new SubmitError(
       "Não foi possível preparar o envio seguro dos arquivos agora.",
@@ -50,18 +51,19 @@ async function ensureUser(rawSession) {
 
 /**
  * Registra o pedido no Supabase: envia as logomarcas para o armazenamento
- * privado, grava o pedido (submit_order) e gera links temporários dos arquivos.
+ * privado, e grava o pedido pelo RPC submit_order.
  */
 export async function submitOrder({
   cart,
   customer,
   notes,
   rawSession,
+  captchaToken,
   onProgress = () => {},
 }) {
   if (!supabase) throw new SubmitError("Sistema de pedidos indisponível.");
   onProgress("Preparando envio…");
-  const uid = await ensureUser(rawSession);
+  const uid = await ensureUser(rawSession, captchaToken);
   const fingerprint = JSON.stringify([cart, customer, notes]);
   const requestKey = requestKeyFor(uid, fingerprint);
   const paths = new Map();
@@ -97,7 +99,7 @@ export async function submitOrder({
       text: i.text,
       files: (i.files || []).map((f) => ({
         path: paths.get(f.id),
-        name: f.name,
+        name: singleLine(f.name, 160) || "arquivo",
       })),
     })),
     p_customer: {
@@ -116,20 +118,6 @@ export async function submitOrder({
         ? error.message
         : "Não foi possível registrar o pedido agora.",
     );
-  const fileLinks = new Map();
-  const ordered = [...paths.entries()];
-  if (ordered.length) {
-    onProgress("Gerando links dos arquivos…");
-    const { data: signed } = await supabase.storage
-      .from("order-files")
-      .createSignedUrls(
-        ordered.map(([, path]) => path),
-        LINK_DAYS * 24 * 60 * 60,
-      );
-    (signed || []).forEach((row, n) => {
-      if (row?.signedUrl) fileLinks.set(ordered[n][0], row.signedUrl);
-    });
-  }
   clearPendingOrder();
   const adminLink = adminOrderLink(order.id);
   return {
@@ -140,7 +128,6 @@ export async function submitOrder({
       customer,
       notes,
       orderNumber: order.number,
-      fileLinks,
       adminLink,
       storedFiles: true,
     }),

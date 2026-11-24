@@ -1,3 +1,4 @@
+import { appPath } from "../lib/routes";
 import { ArrowUpRight, MessageCircle } from "lucide-react";
 import GradientText from "./GradientText";
 import { whatsappLink } from "../config";
@@ -64,7 +65,7 @@ export default function MarketingSections() {
               </div>
             ))}
           </div>
-          <a href="#catalogo" className="text-link">
+          <a href={appPath("#catalogo")} className="text-link">
             Começar meu projeto <ArrowUpRight size={17} />
           </a>
         </div>

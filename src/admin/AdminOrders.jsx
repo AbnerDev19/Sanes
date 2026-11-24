@@ -1,3 +1,4 @@
+import { appPath } from "../lib/routes";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
@@ -147,7 +148,7 @@ export default function AdminOrders() {
       <ul className="admin-list orders">
         {shown.map((o) => (
           <li key={o.id}>
-            <a href={`#/admin/pedidos/${o.id}`} className="admin-row">
+            <a href={appPath(`admin/pedidos/${o.id}`)} className="admin-row">
               <span className="order-number">#{o.number}</span>
               <span className="row-main">
                 <strong>{o.customer?.name}</strong>
@@ -214,7 +215,7 @@ export function AdminOrderDetail({ id }) {
     load();
   }, [id]);
   const back = (
-    <a className="text-link" href="#/admin/pedidos">
+    <a className="text-link" href={appPath("admin/pedidos")}>
       <ArrowLeft size={16} /> Todos os pedidos
     </a>
   );
@@ -286,7 +287,7 @@ export function AdminOrderDetail({ id }) {
               className="btn primary full"
               href={`https://wa.me/55${digits}`}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
             >
               Conversar com o cliente <MessageCircle size={17} />
             </a>
@@ -353,17 +354,23 @@ export function AdminOrderDetail({ id }) {
                     </span>
                     {links[f.id] ? (
                       <>
+                        {f.mime_type !== "application/pdf" && (
+                          <a
+                            className="btn outline small"
+                            href={links[f.id]}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Ver <ExternalLink size={14} />
+                          </a>
+                        )}
                         <a
                           className="btn outline small"
-                          href={links[f.id]}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          Ver <ExternalLink size={14} />
-                        </a>
-                        <a
-                          className="btn outline small"
-                          href={`${links[f.id]}&download=${encodeURIComponent(f.file_name)}`}
+                          href={
+                            f.mime_type === "application/pdf"
+                              ? links[f.id]
+                              : `${links[f.id]}&download=${encodeURIComponent(f.file_name)}`
+                          }
                         >
                           Baixar <Download size={14} />
                         </a>

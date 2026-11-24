@@ -71,7 +71,7 @@ export function contactErrors(customer) {
   const name = String(customer.name || "").trim();
   if (name.length < 2) errors.name = "Informe seu nome completo.";
   if (!validPhone(customer.phone))
-    errors.phone = "Informe um telefone com DDD, por exemplo (61) 98133-3737.";
+    errors.phone = "Informe um telefone com DDD, por exemplo (11) 99999-9999.";
   if (String(customer.city || "").trim().length < 2)
     errors.city = "Informe a cidade.";
   if (!UFS.includes(customer.state)) errors.state = "Selecione o estado.";

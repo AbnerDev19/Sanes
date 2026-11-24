@@ -8,24 +8,37 @@ export async function loadStoreSettings() {
   if (!supabase) return null;
   const { data, error } = await supabase
     .from("store_settings")
-    .select("whatsapp")
+    .select("*")
     .maybeSingle();
   if (error) throw error;
   return data;
 }
 
 export function StoreSettingsProvider({ children }) {
-  const [settings, setSettings] = useState({ whatsapp: WHATSAPP });
+  const [settings, setSettings] = useState({
+    whatsapp: WHATSAPP,
+    mfaRequired: false,
+    loading: Boolean(supabase),
+  });
   useEffect(() => {
     let active = true;
     const refresh = () =>
       loadStoreSettings()
         .then((data) => {
           const whatsapp = normalizeWhatsapp(data?.whatsapp);
-          if (active && whatsapp) setSettings((s) => ({ ...s, whatsapp }));
+          if (active)
+            setSettings({
+              whatsapp: whatsapp || WHATSAPP,
+              mfaRequired: data?.staff_mfa_required === true,
+              loading: false,
+            });
         })
         // Sem a tabela (migração 003 não aplicada) ou offline: mantém a reserva.
-        .catch(() => {});
+        .catch(
+          () =>
+            active &&
+            setSettings((previous) => ({ ...previous, loading: false })),
+        );
     refresh();
     const onChange = () => refresh();
     window.addEventListener("sanes:settings-changed", onChange);

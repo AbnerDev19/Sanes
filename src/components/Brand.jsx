@@ -1,6 +1,11 @@
+import { appPath } from "../lib/routes";
 export default function Brand() {
   return (
-    <a className="brand" href="#inicio" aria-label="Sanes Brindes, início">
+    <a
+      className="brand"
+      href={appPath("#inicio")}
+      aria-label="Sanes Brindes, início"
+    >
       <svg width="32" height="43" viewBox="0 0 40 54" aria-hidden="true">
         <defs>
           <linearGradient id="gold" x2="1" y2="1">

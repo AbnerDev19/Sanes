@@ -1,3 +1,4 @@
+import { useAuthCaptcha } from "./CheckoutCaptcha";
 import { useState } from "react";
 import { supabase, siteUrl } from "../lib/supabase";
 export default function AuthPanel({ onClose, recovery = false, onRecovered }) {
@@ -8,6 +9,7 @@ export default function AuthPanel({ onClose, recovery = false, onRecovered }) {
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [message, setMessage] = useState("");
+  const captcha = useAuthCaptcha(Boolean(supabase) && mode !== "recover");
   const titles = {
     login: "Entre na sua conta",
     signup: "Crie sua conta",
@@ -24,29 +26,38 @@ export default function AuthPanel({ onClose, recovery = false, onRecovered }) {
       );
       return;
     }
+    if (captcha.required && !captcha.token) {
+      setError("Complete a verificação de segurança antes de continuar.");
+      return;
+    }
     setBusy(true);
     try {
       if (mode === "login") {
         const { error } = await supabase.auth.signInWithPassword({
           email: email.trim(),
           password,
+          options: { captchaToken: captcha.token || undefined },
         });
         if (error)
           throw new Error(
             "Não foi possível entrar. Verifique seu e-mail, senha e a confirmação da conta.",
           );
-        onClose();
+        onClose?.();
       } else if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
-          options: { data: { name: name.trim() }, emailRedirectTo: siteUrl() },
+          options: {
+            data: { name: name.trim() },
+            emailRedirectTo: siteUrl(),
+            captchaToken: captcha.token || undefined,
+          },
         });
         if (error)
           throw new Error(
             "Não foi possível criar a conta. Verifique os dados ou tente recuperar seu acesso.",
           );
-        if (data.session) onClose();
+        if (data.session) onClose?.();
         else {
           setMessage(
             "Confira seu e-mail e confirme o cadastro para entrar. Se já tiver uma conta, use Entrar ou recupere o acesso.",
@@ -56,7 +67,7 @@ export default function AuthPanel({ onClose, recovery = false, onRecovered }) {
       } else if (mode === "reset") {
         const { error } = await supabase.auth.resetPasswordForEmail(
           email.trim(),
-          { redirectTo: siteUrl() },
+          { redirectTo: siteUrl(), captchaToken: captcha.token || undefined },
         );
         if (error)
           throw new Error(
@@ -72,11 +83,12 @@ export default function AuthPanel({ onClose, recovery = false, onRecovered }) {
             "Não foi possível atualizar a senha. Abra um novo link de recuperação e tente novamente.",
           );
         onRecovered?.();
-        onClose();
+        onClose?.();
       }
     } catch (e) {
       setError(e.message);
     } finally {
+      if (captcha.required) captcha.reset();
       setBusy(false);
     }
   };
@@ -142,6 +154,7 @@ export default function AuthPanel({ onClose, recovery = false, onRecovered }) {
               Use pelo menos 8 caracteres.
             </small>
           )}
+          {captcha.widget}
           {error && (
             <p role="alert" className="error">
               {error}

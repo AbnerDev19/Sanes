@@ -1,7 +1,7 @@
+import { productPath } from "../lib/routes";
 import { ArrowUpRight, Plus } from "lucide-react";
 import IMG from "./ProductImage";
 import { money } from "../lib/supabase";
-import { productHash } from "../lib/catalog";
 export default function ProductCard({
   product: p,
   index: i,
@@ -18,7 +18,8 @@ export default function ProductCard({
         {p.featured ? (
           <span className="product-badge featured">Destaque</span>
         ) : (
-          p.imagem && <span className="product-badge">{p.capacidade}</span>
+          p.imagem &&
+          p.capacidade && <span className="product-badge">{p.capacidade}</span>
         )}
         <button
           className="product-image-button"
@@ -37,12 +38,13 @@ export default function ProductCard({
           <span>{p.codigo}</span>
         </div>
         <h3>
-          <a href={productHash(p.id)}>{p.nome}</a>
+          <a href={productPath(p.id)}>{p.nome}</a>
         </h3>
         <small className="product-capacity">
-          {p.capacidade || "Especificação a confirmar"}
+          {[p.capacidade, p.material, p.dim].filter(Boolean).join(" · ") ||
+            "Especificação a confirmar"}
         </small>
-        <p>{p.desc}</p>
+        {p.desc && <p>{p.desc}</p>}
         {p.colors?.length > 0 && (
           <small className="product-colors">
             {p.colors.length === 1

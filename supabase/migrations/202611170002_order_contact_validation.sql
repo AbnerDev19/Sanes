@@ -1,9 +1,15 @@
 begin;
 -- The original migration remains unchanged. Guest quotes use WhatsApp only:
 -- anonymous visitors receive no new access to private tables or order RPCs.
-alter function public.place_order(uuid,jsonb,jsonb) rename to place_order_v1;
+do $$
+begin
+ if to_regprocedure('public.place_order_v1(uuid,jsonb,jsonb)') is null then
+  alter function public.place_order(uuid,jsonb,jsonb) rename to place_order_v1;
+ end if;
+end;
+$$;
 revoke all on function public.place_order_v1(uuid,jsonb,jsonb) from public,anon,authenticated;
-create function public.place_order(p_request_key uuid,p_items jsonb,p_customer jsonb)
+create or replace function public.place_order(p_request_key uuid,p_items jsonb,p_customer jsonb)
 returns jsonb language plpgsql security definer set search_path='' as $$
 declare digits text;delivery date;
 begin

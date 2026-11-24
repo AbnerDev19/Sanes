@@ -1,3 +1,4 @@
+import { restorePagesPath } from "./lib/routes";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import { StoreSettingsProvider } from "./lib/storeSettings";
@@ -8,6 +9,7 @@ import "./responsive.css";
 import "./commerce.css";
 import "./order.css";
 
+restorePagesPath();
 createRoot(document.getElementById("root")).render(
   <StoreSettingsProvider>
     <App />

@@ -8,23 +8,31 @@ export default function AdminSettings() {
   const [current, setCurrent] = useState(""),
     [value, setValue] = useState(""),
     [busy, setBusy] = useState(false),
+    [loading, setLoading] = useState(true),
     [error, setError] = useState(""),
     [message, setMessage] = useState("");
   useEffect(() => {
+    let active = true;
     fetchSettings()
-      .then((s) => {
-        setCurrent(s?.whatsapp || "");
-        setValue(formatBrazilianPhone(s?.whatsapp || ""));
+      .then((settings) => {
+        if (!active) return;
+        setCurrent(settings?.whatsapp || "");
+        setValue(formatBrazilianPhone(settings?.whatsapp || ""));
       })
-      .catch((err) => setError(err.message));
+      .catch((err) => active && setError(err.message))
+      .finally(() => active && setLoading(false));
+    return () => {
+      active = false;
+    };
   }, []);
   const normalized = normalizeWhatsapp(value);
   const submit = async (e) => {
     e.preventDefault();
+    if (loading || busy) return;
     setError("");
     setMessage("");
     if (!normalized) {
-      setError("Informe um celular com DDD, por exemplo (61) 98133-3737.");
+      setError("Informe um celular com DDD, por exemplo (11) 99999-9999.");
       return;
     }
     setBusy(true);
@@ -59,9 +67,10 @@ export default function AdminSettings() {
           Novo número
           <input
             type="tel"
+            disabled={loading || busy}
             inputMode="tel"
             autoComplete="off"
-            placeholder="(61) 98133-3737"
+            placeholder="(11) 99999-9999"
             value={value}
             maxLength={16}
             onChange={(e) => setValue(formatBrazilianPhone(e.target.value))}
@@ -78,7 +87,7 @@ export default function AdminSettings() {
           </p>
         )}
         <div className="editor-actions">
-          <button className="btn primary" disabled={busy}>
+          <button className="btn primary" disabled={loading || busy}>
             {busy ? "Salvando…" : "Salvar número"}
           </button>
           {normalized && (

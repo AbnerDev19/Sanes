@@ -208,17 +208,22 @@ export async function updateOrderStatus(id, status) {
   fail(error, "Não foi possível atualizar o status.");
 }
 
-// Links temporários (1 hora) para ver e baixar as logomarcas.
+// PDF é servido como anexo, sem abrir conteúdo ativo no navegador.
 export async function orderFileLinks(files) {
-  if (!files.length) return {};
-  const { data, error } = await supabase.storage
-    .from("order-files")
-    .createSignedUrls(
-      files.map((f) => f.storage_path),
-      3600,
-    );
-  fail(error, "Não foi possível gerar os links dos arquivos.");
+  const bucket = supabase.storage.from("order-files");
   return Object.fromEntries(
-    files.map((f, i) => [f.id, data?.[i]?.signedUrl || ""]),
+    await Promise.all(
+      files.map(async (file) => {
+        const { data, error } = await bucket.createSignedUrl(
+          file.storage_path,
+          3600,
+          file.mime_type === "application/pdf"
+            ? { download: file.file_name }
+            : undefined,
+        );
+        if (error) return [file.id, ""];
+        return [file.id, data?.signedUrl || ""];
+      }),
+    ),
   );
 }

@@ -1,3 +1,4 @@
+import { appPath } from "../lib/routes";
 import { useEffect, useState } from "react";
 import { supabase, getOrders, money, statusLabels } from "../lib/supabase";
 import {
@@ -62,7 +63,7 @@ export default function AccountPanel({ session, staff, wa, onLogout }) {
       </h2>
       <p className="account-email">{session.user.email}</p>
       {staff && (
-        <a className="btn primary full" href="#/admin">
+        <a className="btn primary full" href={appPath("admin")}>
           Abrir painel administrativo
         </a>
       )}

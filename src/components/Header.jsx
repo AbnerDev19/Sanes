@@ -1,3 +1,4 @@
+import { appPath } from "../lib/routes";
 import Brand from "./Brand";
 import { ArrowUpRight, UserRound, ShoppingBag, Menu, X } from "lucide-react";
 import { whatsappLink } from "../config";
@@ -25,10 +26,10 @@ export default function Header({
         <div className="nav wrap">
           <Brand />
           <nav aria-label="Navegação principal">
-            <a href="#catalogo">Catálogo</a>
-            <a href="#personalizacao">Personalização</a>
-            <a href="#sobre">A Sanes</a>
-            <a href="#contato">
+            <a href={appPath("#catalogo")}>Catálogo</a>
+            <a href={appPath("#personalizacao")}>Personalização</a>
+            <a href={appPath("#sobre")}>A Sanes</a>
+            <a href={appPath("#contato")}>
               Fale com a gente <ArrowUpRight size={13} />
             </a>
           </nav>
@@ -71,16 +72,19 @@ export default function Header({
             className="mobile-links"
             aria-label="Navegação no celular"
           >
-            <a onClick={() => setMobile(false)} href="#catalogo">
+            <a onClick={() => setMobile(false)} href={appPath("#catalogo")}>
               Catálogo
             </a>
-            <a onClick={() => setMobile(false)} href="#personalizacao">
+            <a
+              onClick={() => setMobile(false)}
+              href={appPath("#personalizacao")}
+            >
               Personalização
             </a>
-            <a onClick={() => setMobile(false)} href="#sobre">
+            <a onClick={() => setMobile(false)} href={appPath("#sobre")}>
               A Sanes
             </a>
-            <a onClick={() => setMobile(false)} href="#contato">
+            <a onClick={() => setMobile(false)} href={appPath("#contato")}>
               Fale com a gente
             </a>
           </nav>

@@ -1,6 +1,6 @@
 # Painel da Sanes Brindes: guia rápido
 
-**Endereço:** `https://abnerdev19.github.io/Sanes/#/admin`
+**Endereço:** `https://abnerdev19.github.io/Sanes/admin`
 Funciona no celular e no computador. Entre com o e-mail e a senha que o Abner cadastrou.
 
 ---
@@ -12,8 +12,7 @@ Funciona no celular e no computador. Entre com o e-mail e a senha que o Abner ca
 3. O WhatsApp do cliente abre com a mensagem **NOVO PEDIDO — SANES BRINDES** já escrita para o seu número. Ele só aperta enviar.
 4. A mensagem traz:
    - o **número do pedido**;
-   - os **links das logomarcas**, que abrem direto no celular e ficam válidos por 30 dias;
-   - o link **"Pedido completo"**, que abre o pedido no painel.
+   - o resumo dos itens e um link **Pedido completo**, que abre o pedido no painel. As logomarcas ficam no painel.
 
 Se o envio pelo sistema falhar, o cliente ainda consegue mandar o pedido, mas aí ele anexa a logomarca na própria conversa do WhatsApp.
 
@@ -25,7 +24,7 @@ Se o envio pelo sistema falhar, o cliente ainda consegue mandar o pedido, mas a�
 - Toque num pedido para ver:
   - os dados do cliente e o botão **Conversar com o cliente**;
   - cada produto, com quantidade, cores, modelo, técnica e observações;
-  - as logomarcas, com os botões **Ver** e **Baixar**. Esses links valem por 1 hora; ao reabrir o pedido, links novos são gerados.
+  - as logomarcas, com os botões **Ver** e **Baixar**. PDFs ficam disponíveis em **Baixar**. Os links valem por 1 hora e são renovados ao reabrir o pedido.
 - **Status:** atualize conforme o atendimento avança: Pedido recebido → Em atendimento → Orçamento enviado → Pedido confirmado → Em produção → Enviado → Concluído (ou Cancelado). Se o cliente tiver conta, ele vê o status em "Minha conta".
 
 ## Produtos
@@ -39,18 +38,23 @@ Se o envio pelo sistema falhar, o cliente ainda consegue mandar o pedido, mas a�
 - **Ativo:** desmarque para esconder o produto do catálogo sem apagá-lo.
 - **Estrela (destaque):** produtos destacados aparecem primeiro no catálogo.
 - **Setas ↑ ↓:** mudam a ordem de exibição no catálogo.
-- **Excluir:** só funciona para produtos que nunca entraram num pedido. Para os demais, desative.
+- **Excluir:** só aparece para o proprietário e só funciona para produtos que nunca entraram num pedido. Para os demais, desative.
 
 ## Categorias
 
 - Adicione, renomeie (ao renomear, todos os produtos da categoria acompanham), oculte ou mude a ordem das abas do catálogo.
-- Só é possível excluir uma categoria sem produtos.
+- O proprietário só pode excluir uma categoria sem produtos.
 
 ## Configurações
 
-- **WhatsApp que recebe os pedidos:** troque o número e toque em **Salvar número**. Vale imediatamente para todo o site. Use **Testar conversa** para conferir.
+- **WhatsApp que recebe os pedidos (proprietário):** troque o número e toque em **Salvar número**. Vale imediatamente para todo o site. Use **Testar conversa** para conferir.
 
 ---
 
 **Dica:** no celular, abra o endereço do painel e use "Adicionar à tela inicial" para ter um atalho.
 **Problemas de acesso ou senha:** na tela de entrada, toque em "Esqueci minha senha", ou fale com o Abner.
+
+
+Se a autenticação em duas etapas estiver ativa, o painel vai pedir o código do aplicativo autenticador. No primeiro acesso, escaneie o QR code exibido e confirme o código. Se perder acesso ao aplicativo, solicite a recuperação ao responsável pelo Supabase.
+
+Pedidos concluídos e cancelados são finais. Se houve engano, peça ajuda ao responsável e registre o motivo. Para solicitações de acesso ou exclusão de dados pessoais, use o procedimento do [Guia do Abner](../supabase/GUIA-ABNER.md).

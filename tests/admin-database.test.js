@@ -9,9 +9,9 @@ const migration = (name) =>
 // Estruturas mínimas de Auth/Storage do Supabase para rodar o SQL localmente.
 const SUPABASE_STUBS = `create role anon;create role authenticated;create role service_role bypassrls;
  create schema auth;
- create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,is_anonymous boolean not null default false);
+ create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,created_at timestamptz default now(),last_sign_in_at timestamptz,is_anonymous boolean not null default false);
  create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
- create function auth.jwt() returns jsonb language sql stable as $$select jsonb_build_object('is_anonymous',coalesce(nullif(current_setting('request.jwt.claim.anon',true),''),'false')::boolean)$$;
+ create function auth.jwt() returns jsonb language sql stable as $$select jsonb_build_object('is_anonymous',coalesce(nullif(current_setting('request.jwt.claim.anon',true),''),'false')::boolean,'aal',coalesce(nullif(current_setting('request.jwt.claim.aal',true),''),'aal1'))$$;
  grant usage on schema auth to anon,authenticated;
  create schema storage;grant usage on schema storage to anon,authenticated;
  create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
@@ -33,6 +33,11 @@ async function setup() {
     "202611170002_order_contact_validation.sql",
     "202611230003_catalog_admin_uploads.sql",
     "202611230004_admin_ordering.sql",
+    "202611240005_security.sql",
+    "202611240006_order_validation.sql",
+    "202611240007_retention.sql",
+    "202611240008_catalog_fields.sql",
+    "202611240009_staff_mfa.sql",
   ])
     await db.exec(await migration(name));
   await db.query(
@@ -249,6 +254,13 @@ test("visitante envia logomarca e pedido; arquivos ficam privados", async () => 
   await db.query("select public.update_order_status($1,'in_contact')", [
     order.id,
   ]);
+  await db.query("select public.update_order_status($1,'completed')", [
+    order.id,
+  ]);
+  await assert.rejects(
+    db.query("select public.update_order_status($1,'requested')", [order.id]),
+    /mudança de status/,
+  );
   await db.close();
 });
 
@@ -309,4 +321,368 @@ test("equipe reordena produtos e categorias; visitante não", async () => {
     1,
   );
   await db.close();
+});
+
+test("restrições de visitantes, proprietário, auditoria e limite global", async () => {
+  const { db, as } = await setup();
+  try {
+    await db.query("insert into public.carts(user_id) values($1)", [GUEST]);
+    await db.query("insert into public.profiles(id) values($1)", [GUEST]);
+    await db.query("update auth.users set is_anonymous=false where id=$1", [
+      OTHER,
+    ]);
+    await db.query("insert into public.store_members values($1,'staff')", [
+      OTHER,
+    ]);
+    await db.exec("update public.store_settings set max_orders_per_hour=1");
+    await as(GUEST, true);
+    assert.equal((await db.query("select * from public.carts")).rows.length, 0);
+    assert.equal(
+      (await db.query("select * from public.profiles")).rows.length,
+      0,
+    );
+    await assert.rejects(
+      db.query("insert into public.carts(user_id) values($1)", [GUEST]),
+      /row-level security/,
+    );
+    assert.equal(
+      (await db.query("select * from public.audit_log")).rows.length,
+      0,
+    );
+    assert.equal(
+      (await db.query("select * from public.categories")).rows.length,
+      6,
+    );
+    const args = [
+      KEY,
+      JSON.stringify([{ id: "SB-002", qty: 50 }]),
+      JSON.stringify(customer),
+    ];
+    await db.query("select public.submit_order($1,$2,$3)", args);
+    await as(OTHER);
+    await assert.rejects(
+      db.query("select public.submit_order($1,$2,$3)", args),
+      /loja recebeu muitos/,
+    );
+    assert.equal(
+      (
+        await db.query(
+          "update public.store_settings set whatsapp='5561999990000' returning id",
+        )
+      ).rows.length,
+      0,
+    );
+    assert.equal(
+      (
+        await db.query(
+          "delete from public.categories where name='Kits e presentes' returning name",
+        )
+      ).rows.length,
+      0,
+    );
+    assert.equal(
+      (
+        await db.query(
+          "update public.products set featured=true where id='SB-002' returning id",
+        )
+      ).rows.length,
+      1,
+    );
+    assert.ok(
+      (await db.query("select * from public.audit_log")).rows.length > 0,
+    );
+    await assert.rejects(
+      db.query("delete from public.audit_log"),
+      /permission denied/,
+    );
+    await as(OWNER);
+    assert.equal(
+      (
+        await db.query(
+          "update public.store_settings set whatsapp='5561999990000' returning id",
+        )
+      ).rows.length,
+      1,
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select to_regprocedure('public.place_order(uuid,jsonb,jsonb)') as rpc",
+        )
+      ).rows[0].rpc,
+      null,
+    );
+  } finally {
+    await db.close();
+  }
+});
+
+test("validação rejeita opções, duplicatas e metadados incorretos", async () => {
+  const { db, as } = await setup();
+  try {
+    await db.query(
+      "update public.products set colors='[\"Pérola\"]' where id='SB-001'",
+    );
+    await assert.rejects(
+      db.query(
+        "update public.products set gallery='[\"javascript:alert(1)\"]'",
+      ),
+      /products_element_format/,
+    );
+    await assert.rejects(
+      db.query("update public.products set variants='[42]'"),
+      /products_element_format/,
+    );
+    await as(GUEST, true);
+    const png = path(GUEST);
+    const pdf = path(GUEST, "logo.pdf");
+    for (const file of [png, pdf])
+      await db.query(
+        'insert into storage.objects(bucket_id,name,metadata) values(\'order-files\',$1,\'{"mimetype":"image/png","size":123}\')',
+        [file],
+      );
+    const item = {
+      id: "SB-001",
+      qty: 30,
+      variant: "500 ml",
+      colors: [{ name: "PEROLA", qty: 15 }],
+    };
+    const submit = (items, data = customer) =>
+      db.query("select public.submit_order($1,$2,$3) as r", [
+        KEY,
+        JSON.stringify(items),
+        JSON.stringify(data),
+      ]);
+    await assert.rejects(
+      submit([{ ...item, variant: "" }]),
+      /Escolha um modelo/,
+    );
+    await assert.rejects(
+      submit([{ ...item, variant: "800 ml" }]),
+      /Modelo inválido/,
+    );
+    await assert.rejects(
+      submit([{ id: "SB-002", qty: 50, variant: "500 ml" }]),
+      /não possui modelos/,
+    );
+    await assert.rejects(
+      submit([{ ...item, colors: [{ name: "Azul" }] }]),
+      /Cor inválida/,
+    );
+    await assert.rejects(
+      submit([{ ...item, colors: [{ name: "perola" }, { name: "Pérola" }] }]),
+      /Cor repetida/,
+    );
+    await assert.rejects(
+      submit([{ ...item, colors: [{ name: "Pérola", qty: 0 }] }]),
+      /Quantidade por cor inválida/,
+    );
+    await assert.rejects(
+      submit([{ ...item, files: [{ path: pdf, name: "logo.pdf" }] }]),
+      /tipo do arquivo/,
+    );
+    await assert.rejects(
+      submit([{ ...item, files: [{ path: png, name: "logo\n.png" }] }]),
+      /Nome de arquivo/,
+    );
+    await assert.rejects(
+      submit([item], { ...customer, phone: "-".repeat(31) + customer.phone }),
+      /Telefone/,
+    );
+    const withLogo = { ...item, files: [{ path: png, name: "logo.png" }] };
+    await assert.rejects(submit([withLogo, withLogo]), /mais de uma vez/);
+    const order = (
+      await submit([withLogo, { id: "SB-002", qty: 50 }], {
+        ...customer,
+        name: "  Maria\nSouza ",
+        notes: "\n  Texto\t livre  ",
+      })
+    ).rows[0].r;
+    assert.equal(order.customer.name, "Maria Souza");
+    assert.equal(order.customer.phone, "61999990000");
+    assert.equal(order.customer.notes, "Texto  livre");
+    assert.deepEqual(
+      order.order_items.map(({ position, product_id }) => [
+        position,
+        product_id,
+      ]),
+      [
+        [1, "SB-001"],
+        [2, "SB-002"],
+      ],
+    );
+  } finally {
+    await db.close();
+  }
+});
+
+test("retenção agenda a remoção de órfãos, sem apagar objetos por SQL", async () => {
+  const { db, as } = await setup();
+  try {
+    await db.query(
+      "insert into storage.objects(bucket_id,name,created_at) values('order-files',$1,now()-interval '3 days'),('order-files',$2,now())",
+      [path(GUEST), path(GUEST, "recent.png")],
+    );
+    await as(GUEST, true);
+    await assert.rejects(
+      db.query("select * from public.queue_expired_order_files()"),
+      /permission denied/,
+    );
+    await db.exec("reset role");
+    assert.deepEqual(
+      (
+        await db.query("select * from public.queue_expired_order_files()")
+      ).rows.map((row) => row.path),
+      [path(GUEST)],
+    );
+    assert.equal(
+      (await db.query("select count(*)::int total from storage.objects"))
+        .rows[0].total,
+      2,
+    );
+    assert.equal(
+      (
+        await db.query("select public.finish_order_file_purge($1) as n", [
+          [path(GUEST)],
+        ])
+      ).rows[0].n,
+      0,
+    );
+    await db.query("delete from storage.objects where name=$1", [path(GUEST)]);
+    assert.equal(
+      (
+        await db.query("select public.finish_order_file_purge($1) as n", [
+          [path(GUEST)],
+        ])
+      ).rows[0].n,
+      1,
+    );
+  } finally {
+    await db.close();
+  }
+});
+
+test("importação em lote mantém categoria, mínimo e capa editados", async () => {
+  const { db, as } = await setup();
+  try {
+    await db.query(
+      "update public.products set image_url='https://cdn.example.com/foto.webp', min_qty=75, min_confirmed=false where id='SB-001'",
+    );
+    await as(OWNER);
+    await assert.rejects(
+      db.query("select * from public.update_imported_catalog('[]')"),
+      /permission denied/,
+    );
+    await db.exec("reset role");
+    await db.query("select * from public.update_imported_catalog($1)", [
+      JSON.stringify([
+        {
+          id: "SB-001",
+          category: "Canetas",
+          name: "Térmica",
+          material: "Inox",
+          image_url: null,
+        },
+      ]),
+    ]);
+    const {
+      rows: [row],
+    } = await db.query("select * from public.products where id='SB-001'");
+    assert.equal(row.name, "Térmica");
+    assert.equal(row.material, "Inox");
+    assert.equal(row.min_qty, 75);
+    assert.equal(row.min_confirmed, false);
+    assert.equal(row.category, "Térmicos e bebidas");
+    assert.equal(row.image_url, "https://cdn.example.com/foto.webp");
+  } finally {
+    await db.close();
+  }
+});
+
+test("MFA opt-in exige aal2 para alterações de equipe", async () => {
+  const { db, as } = await setup();
+  try {
+    await db.exec("update public.store_settings set staff_mfa_required=true");
+    await as(OWNER);
+    await assert.rejects(
+      db.query("select public.reorder_products(array['SB-001'])"),
+      /Acesso restrito/,
+    );
+    assert.equal(
+      (
+        await db.query(
+          "update public.store_settings set whatsapp='5561999990000' returning id",
+        )
+      ).rows.length,
+      0,
+    );
+    await db.query("select set_config('request.jwt.claim.aal','aal2',false)");
+    assert.equal(
+      (
+        await db.query(
+          "update public.store_settings set whatsapp='5561999990000' returning id",
+        )
+      ).rows.length,
+      1,
+    );
+    await assert.rejects(
+      db.query("update public.store_settings set staff_mfa_required=false"),
+      /permission denied/,
+    );
+  } finally {
+    await db.close();
+  }
+});
+
+test("limpeza de perfil anônimo só roda com prazo e a busca usa índice de prefixo", async () => {
+  const { db, as } = await setup();
+  try {
+    await db.query(
+      "update auth.users set created_at=now()-interval '5 days' where id=$1",
+      [GUEST],
+    );
+    await db.query("insert into public.profiles(id) values($1),($2)", [
+      GUEST,
+      OWNER,
+    ]);
+    await db.query("insert into public.carts(user_id) values($1),($2)", [
+      GUEST,
+      OWNER,
+    ]);
+    assert.equal(
+      (await db.query("select public.cleanup_anonymous_profiles() as n"))
+        .rows[0].n,
+      0,
+    );
+    await db.exec(
+      "update public.store_settings set anonymous_retention_days=3",
+    );
+    assert.equal(
+      (await db.query("select public.cleanup_anonymous_profiles() as n"))
+        .rows[0].n,
+      2,
+    );
+    assert.equal(
+      (await db.query("select count(*)::integer as n from public.profiles"))
+        .rows[0].n,
+      1,
+    );
+    await as(GUEST, true);
+    await assert.rejects(
+      db.query("select public.cleanup_anonymous_profiles()"),
+      /permission denied/,
+    );
+    await db.exec("reset role; set enable_seqscan=off");
+    const plan = await db.query(
+      `explain select count(*) from storage.objects where bucket_id='order-files'
+      and name collate "C" >= $1 || '/' and name collate "C" < $1 || '0'`,
+      [GUEST],
+    );
+    assert.match(
+      plan.rows.map((row) => row["QUERY PLAN"]).join("\n"),
+      /order_files_storage_prefix/,
+    );
+  } finally {
+    await db.close();
+  }
 });

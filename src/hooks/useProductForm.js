@@ -127,7 +127,7 @@ export default function useProductForm({ cart, setCart, onAdded }) {
   };
 
   const buildColors = (qty) => {
-    const custom = values.customColor
+    const custom = (product.colors?.length ? "" : values.customColor)
       .split(",")
       .map((c) => c.trim())
       .filter(Boolean)
@@ -175,6 +175,7 @@ export default function useProductForm({ cart, setCart, onAdded }) {
       name: product.nome,
       key: editingKey || crypto.randomUUID(),
       qty,
+      minimumUnconfirmed: product.min_confirmed === false,
       colors,
       variant: values.variant,
       method: values.method,

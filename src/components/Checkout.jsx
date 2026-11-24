@@ -1,3 +1,5 @@
+import { appPath } from "../lib/routes";
+import CheckoutCaptcha from "./CheckoutCaptcha";
 import {
   Check,
   ArrowLeft,
@@ -36,14 +38,14 @@ function Success({ checkout, onClose }) {
           : "Pedido pronto para envio"}
       </h3>
       <p>
-        Toque no botão abaixo: o WhatsApp da Sanes abre com o pedido completo já
-        escrito. É só enviar a mensagem.
+        Toque no botão abaixo: o WhatsApp da Sanes abre com um resumo do pedido
+        já escrito. É só enviar a mensagem.
       </p>
       <a
         className="btn primary full"
         href={result.link}
         target="_blank"
-        rel="noreferrer"
+        rel="noopener noreferrer"
       >
         Enviar pedido pelo WhatsApp <MessageCircle size={18} />
       </a>
@@ -62,8 +64,7 @@ function Success({ checkout, onClose }) {
       ) : (
         result.saved && (
           <p className="field-help">
-            Suas logomarcas foram enviadas com segurança e os links já estão na
-            mensagem.
+            A equipe acessa suas logomarcas pelo pedido no painel.
           </p>
         )
       )}
@@ -139,7 +140,7 @@ export default function Checkout({
           inputMode="tel"
           required
           maxLength={16}
-          placeholder="(61) 98133-3737"
+          placeholder="(11) 99999-9999"
           onChange={(e) =>
             setCustomer({
               ...customer,
@@ -181,7 +182,7 @@ export default function Checkout({
               {checkout.fileCount === 1
                 ? "1 logomarca será enviada"
                 : `${checkout.fileCount} logomarcas serão enviadas`}{" "}
-              com segurança e o link irá na mensagem.
+              para o pedido no painel da Sanes.
             </>
           ) : (
             <>
@@ -194,6 +195,13 @@ export default function Checkout({
             </>
           )}
         </p>
+      )}
+      {checkout.needsCaptcha && (
+        <CheckoutCaptcha
+          siteKey={checkout.captchaSiteKey}
+          onToken={checkout.setCaptchaToken}
+          attempt={checkout.captchaAttempt}
+        />
       )}
       {missingFiles > 0 && (
         <p className="error" role="alert">
@@ -215,6 +223,22 @@ export default function Checkout({
           )}
         </div>
       )}
+      <p className="field-help">
+        Ao finalizar, você concorda com o uso dos dados e arquivos para atender
+        seu pedido de orçamento. Leia a{" "}
+        <a
+          href={appPath("privacidade")}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Política de Privacidade
+        </a>{" "}
+        e os{" "}
+        <a href={appPath("termos")} target="_blank" rel="noopener noreferrer">
+          Termos de uso
+        </a>
+        .
+      </p>
       <button
         className="btn primary full"
         type="submit"
@@ -231,7 +255,7 @@ export default function Checkout({
         </p>
       )}
       <p className="field-help">
-        Ao finalizar, o WhatsApp da Sanes abre com o pedido completo. Valores,
+        Ao finalizar, o WhatsApp da Sanes abre com um resumo do pedido. Valores,
         prazo e pagamento são combinados no atendimento.
       </p>
       {!session && supabaseConfigured && (

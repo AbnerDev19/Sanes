@@ -1,3 +1,4 @@
+import { appPath } from "../lib/routes";
 import { useEffect, useState } from "react";
 import { ArrowLeft, ImagePlus, Star, Trash2, X, Plus } from "lucide-react";
 import {
@@ -14,6 +15,7 @@ const BLANK = {
   name: "",
   category: "",
   capacity: "",
+  material: "",
   description: "",
   dimensions: "",
   min_qty: 30,
@@ -101,7 +103,7 @@ function TagInput({ label, help, values, onChange, placeholder }) {
   );
 }
 
-export default function ProductEditor({ id, onSaved }) {
+export default function ProductEditor({ id, onSaved, owner }) {
   const [created, setCreated] = useState(false);
   const isNew = id === "novo" && !created;
   const [form, setForm] = useState(BLANK),
@@ -149,7 +151,7 @@ export default function ProductEditor({ id, onSaved }) {
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [id, isNew]);
 
   const pictures = [form.image_url, ...form.gallery].filter(Boolean);
   const setPictures = (list) =>
@@ -198,6 +200,7 @@ export default function ProductEditor({ id, onSaved }) {
         name: form.name.trim(),
         category: form.category,
         capacity: form.capacity.trim(),
+        material: (form.material || "").trim(),
         description: form.description.trim(),
         dimensions: form.dimensions.trim() || null,
         min_qty: min,
@@ -218,7 +221,7 @@ export default function ProductEditor({ id, onSaved }) {
         history.replaceState(
           null,
           "",
-          `#/admin/produtos/${encodeURIComponent(row.id)}`,
+          appPath(`admin/produtos/${encodeURIComponent(row.id)}`),
         );
         setCreated(true);
       }
@@ -237,7 +240,7 @@ export default function ProductEditor({ id, onSaved }) {
       await deleteProduct(form.id);
       await Promise.all(pictures.map(removeProductImage)).catch(() => {});
       onSaved();
-      location.hash = "#/admin/produtos";
+      location.assign(appPath("admin/produtos"));
     } catch (err) {
       setError(err.message);
       setConfirmDelete(false);
@@ -247,7 +250,7 @@ export default function ProductEditor({ id, onSaved }) {
   };
 
   const back = (
-    <a className="text-link" href="#/admin/produtos">
+    <a className="text-link" href={appPath("admin/produtos")}>
       <ArrowLeft size={16} /> Todos os produtos
     </a>
   );
@@ -308,9 +311,17 @@ export default function ProductEditor({ id, onSaved }) {
               onChange={(e) => set({ description: e.target.value })}
             />
           </label>
+          <label>
+            Material
+            <input
+              value={form.material || ""}
+              maxLength={120}
+              onChange={(e) => set({ material: e.target.value })}
+            />
+          </label>
           <div className="form-row">
             <label>
-              Capacidade / especificação
+              Capacidade
               <input
                 value={form.capacity}
                 maxLength={120}
@@ -472,7 +483,8 @@ export default function ProductEditor({ id, onSaved }) {
           <button className="btn primary" disabled={saving || uploading}>
             {saving ? "Salvando…" : "Salvar produto"}
           </button>
-          {!isNew &&
+          {owner &&
+            !isNew &&
             (confirmDelete ? (
               <span className="confirm-delete">
                 Excluir definitivamente?

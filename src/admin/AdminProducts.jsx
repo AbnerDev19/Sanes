@@ -1,3 +1,4 @@
+import { appPath } from "../lib/routes";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, Plus, Search, Star } from "lucide-react";
 import ProductImage from "../components/ProductImage";
@@ -93,7 +94,7 @@ export default function AdminProducts({ onChange }) {
             catálogo (destaques aparecem primeiro).
           </p>
         </div>
-        <a className="btn primary" href="#/admin/produtos/novo">
+        <a className="btn primary" href={appPath("admin/produtos/novo")}>
           <Plus size={17} /> Novo produto
         </a>
       </div>
@@ -133,7 +134,7 @@ export default function AdminProducts({ onChange }) {
               </span>
               <a
                 className="row-main"
-                href={`#/admin/produtos/${encodeURIComponent(p.id)}`}
+                href={appPath(`admin/produtos/${encodeURIComponent(p.id)}`)}
               >
                 <strong>{p.name}</strong>
                 <small>

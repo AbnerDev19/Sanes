@@ -1,0 +1,5 @@
+[functions.notify-order]
+verify_jwt = false
+
+[functions.maintain-orders]
+verify_jwt = false

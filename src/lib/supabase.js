@@ -1,3 +1,4 @@
+import { appPath } from "./routes";
 import { createClient } from "@supabase/supabase-js";
 import { normalizeCategory } from "./catalog";
 import { assertPublicKey } from "./publicConfig";
@@ -26,11 +27,7 @@ export const supabase = supabaseConfigured
       },
     })
   : null;
-export const siteUrl = () =>
-  new URL(
-    import.meta.env.BASE_URL,
-    window.location.origin + window.location.pathname,
-  ).href.split("#")[0];
+export const siteUrl = () => new URL(appPath(), window.location.origin).href;
 export function mapProduct(p) {
   return {
     id: p.id,
@@ -38,7 +35,10 @@ export function mapProduct(p) {
     nome: p.name,
     categoria: normalizeCategory(p.category),
     capacidade: p.capacity,
-    desc: p.description,
+    material: p.material,
+    desc: /a confirmar com a equipe Sanes\.?$/i.test(p.description || "")
+      ? ""
+      : p.description,
     dim: p.dimensions,
     min: p.min_qty,
     min_confirmed: p.min_confirmed,

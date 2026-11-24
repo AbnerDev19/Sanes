@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { Check, X } from "lucide-react";
 import ClickSpark from "./components/ClickSpark";
 import Header from "./components/Header";
+import LegalPage from "./pages/LegalPage";
 import Footer from "./components/Footer";
 import ProductModal from "./components/ProductModal";
 import CartDrawer from "./components/CartDrawer";
@@ -84,6 +85,7 @@ export default function App() {
     setCart,
     profile,
     staff,
+    owner,
     staffChecked,
     syncError,
     retrySync,
@@ -133,11 +135,11 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
   useEffect(() => {
-    if (!recovery) return;
+    if (!recovery || route.name === "account") return;
     productForm.close();
     setCartOpen(false);
     setAccountView("auth");
-  }, [recovery]);
+  }, [recovery, route.name]);
   useEffect(() => {
     const close = (e) => {
       if (e.key === "Escape") setMobile(false);
@@ -181,6 +183,10 @@ export default function App() {
     document.getElementById("catalogo")?.scrollIntoView({ behavior: "smooth" });
   };
   const showAccount = () => {
+    if (route.name === "account" && !cartOpen) {
+      document.getElementById("buyer-account-title")?.focus();
+      return;
+    }
     productForm.close();
     setCartOpen(false);
     setAccountView(session ? "account" : "auth");
@@ -212,6 +218,7 @@ export default function App() {
           session={session}
           authReady={authReady}
           staff={staff}
+          owner={owner}
           staffChecked={staffChecked}
           recovery={recovery}
           onRecovered={() => setRecovery(false)}
@@ -256,7 +263,32 @@ export default function App() {
             </button>
           </div>
         )}
-        {route.name === "product" ? (
+        {route.name === "privacy" || route.name === "terms" ? (
+          <LegalPage privacy={route.name === "privacy"} />
+        ) : route.name === "account" ? (
+          <div className="wrap account-page">
+            <h1 id="buyer-account-title" tabIndex={-1}>
+              Área do comprador
+            </h1>
+            {!authReady ? (
+              <p role="status">Carregando sua conta…</p>
+            ) : session && !recovery ? (
+              <AccountPanel
+                key={session.user.id}
+                session={session}
+                staff={staff}
+                wa={whatsapp}
+                onLogout={checkout.clearCustomer}
+              />
+            ) : (
+              <AuthPanel
+                key={recovery ? "recovery" : "login"}
+                recovery={recovery}
+                onRecovered={() => setRecovery(false)}
+              />
+            )}
+          </div>
+        ) : route.name === "product" ? (
           <ProductPage
             product={products.find((p) => p.id === route.productId)}
             onCustomize={productForm.open}

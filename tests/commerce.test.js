@@ -83,58 +83,50 @@ test("pedido salvo gera a mensagem no modelo da Sanes, sem duplicar anexos", () 
   for (const text of [
     "NOVO PEDIDO — SANES BRINDES",
     "Pedido nº 42",
-    "Cidade: Brasília/DF",
-    "Produto 1: Garrafa (A)",
-    "Quantidade: 30 unidades",
-    "Cor: Azul",
-    "Modelo: 750 ml",
-    "Personalização: Laser",
-    "Logomarca: arte.pdf (enviada pelo site)",
-    "OBSERVAÇÕES GERAIS:\nEntrega em dezembro",
+    "Telefone: (61) 99999-0000",
+    "Garrafa (A): 30 un.",
+    "Azul · 750 ml · Laser",
     "Pedido completo: https://loja/#/admin/pedidos/order-id",
-    "Aguardo retorno para dar continuidade ao atendimento!",
   ])
     assert.ok(message.includes(text), text);
   assert.ok(!message.includes("undefined"));
   assert.ok(!message.includes("vou anexar"));
 });
 
-test("mensagem sem registro pede anexo manual e usa links quando existem", () => {
-  const items = [
-    {
-      id: "A",
-      name: "Garrafa",
-      qty: 40,
-      colors: [
-        { name: "Preto", qty: 10 },
-        { name: "Azul", qty: 30 },
-      ],
-      variant: "",
-      method: "",
-      text: "",
-      files: [
-        { id: "f1", name: "logo.png" },
-        { id: "f2", name: "manual.pdf" },
-      ],
-    },
-  ];
-  const customer = { name: "Ana", phone: "61", city: "Goiânia", state: "GO" };
-  const message = buildOrderMessage({
-    items,
-    customer,
-    fileLinks: new Map([["f1", "https://arquivo/logo"]]),
+test("mensagem manual saneia nomes e pede anexo na conversa", () => {
+  const result = buildOrderMessage({
+    items: [{ ...item, files: [{ name: "logo\nempresa.pdf" }] }],
+    customer: { name: "Ana\nSilva", phone: "61" },
+    notes: "Referência https://example.com/privado",
   });
-  assert.ok(message.includes("Empresa: Não informada"));
-  assert.ok(message.includes("Cor: Preto (10), Azul (30)"));
-  assert.ok(message.includes("Modelo: Padrão"));
-  assert.ok(message.includes("Logomarca 1: logo.png — https://arquivo/logo"));
+  assert.match(result, /Nome: Ana Silva/);
+  assert.match(result, /logo empresa.pdf/);
+  assert.match(result, /Vou anexar 1 arquivo/);
+  assert.doesNotMatch(result, /https:\/\//);
+});
+
+test("resumo com 100 itens e 20 anexos preserva o link e o limite da URL", () => {
+  const items = Array.from({ length: 100 }, (_, index) => ({
+    ...item,
+    name: "Personalização ç 🎁 ".repeat(6),
+    files: index < 20 ? [{ name: "endereço privado.pdf" }] : [],
+  }));
+  const link = "https://exemplo.com/admin/pedidos/42";
+  const result = buildOrderMessage({
+    items,
+    customer: { name: "Ana", phone: "61999990000" },
+    orderNumber: 42,
+    adminLink: link,
+    storedFiles: true,
+  });
+  assert.match(result, /Pedido nº 42/);
+  assert.match(result, /\+\d+ itens, veja o pedido completo no painel/);
+  assert.equal(result.match(/https:\/\//g)?.length, 1);
+  assert.equal(result.includes("endereço privado"), false);
   assert.ok(
-    message.includes("Logomarca 2: manual.pdf (vou anexar nesta conversa)"),
+    `https://wa.me/5561981333737?text=${encodeURIComponent(result)}`.length <=
+      1500,
   );
-  assert.ok(
-    message.includes("Vou enviar o arquivo da logomarca nesta conversa."),
-  );
-  assert.ok(message.includes("OBSERVAÇÕES GERAIS:\nNenhuma"));
 });
 
 test("carrinho antigo é convertido e dados inválidos são descartados", () => {

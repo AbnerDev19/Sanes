@@ -40,6 +40,12 @@ export default function useCheckout({
   canOrder,
   whatsapp,
 }) {
+  const captchaSiteKey = import.meta.env.VITE_CAPTCHA_SITE_KEY || "";
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaAttempt, setCaptchaAttempt] = useState(0);
+  const needsCaptcha = Boolean(
+    supabaseConfigured && captchaSiteKey && !session && !rawSession?.user?.id,
+  );
   const [customer, setCustomerState] = useState(() => ({
       ...EMPTY_CUSTOMER,
       ...readJson(SAVED, {}),
@@ -125,6 +131,13 @@ export default function useCheckout({
       });
       return;
     }
+    if (needsCaptcha && !captchaToken) {
+      setError({
+        message: "Complete a verificação de segurança para enviar o pedido.",
+        canFallback: true,
+      });
+      return;
+    }
     setSubmitting(true);
     try {
       if (session)
@@ -144,6 +157,7 @@ export default function useCheckout({
         customer,
         notes: combinedNotes,
         rawSession: session || rawSession,
+        captchaToken: needsCaptcha ? captchaToken : undefined,
         onProgress: setProgress,
       });
       setResult({
@@ -158,6 +172,10 @@ export default function useCheckout({
         canFallback: err instanceof SubmitError ? err.canFallback : true,
       });
     } finally {
+      if (needsCaptcha) {
+        setCaptchaToken("");
+        setCaptchaAttempt((n) => n + 1);
+      }
       setSubmitting(false);
       setProgress("");
     }
@@ -176,6 +194,10 @@ export default function useCheckout({
   return {
     customer,
     setCustomer,
+    needsCaptcha,
+    captchaSiteKey,
+    setCaptchaToken,
+    captchaAttempt,
     notes,
     setNotes,
     fieldErrors,

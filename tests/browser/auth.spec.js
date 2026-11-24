@@ -55,3 +55,24 @@ test("password recovery callback opens the password-change screen", async ({
     page.getByRole("button", { name: "Minha conta", exact: true }),
   ).toBeVisible();
 });
+
+test("rodapé dá acesso à conta do comprador e ao painel", async ({ page }) => {
+  await mockStore(page);
+  await page.goto("/");
+  const footer = page.getByRole("contentinfo");
+  await expect(footer.getByText("11.893.105/0001-33")).toBeVisible();
+  await footer.getByRole("link", { name: "Área do comprador" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Área do comprador" }),
+  ).toBeVisible();
+  await page.getByLabel("E-mail da conta").fill("cliente@example.com");
+  await page.getByLabel("Senha", { exact: true }).fill("password-test");
+  await page.getByRole("button", { name: "Entrar", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Meus pedidos" }),
+  ).toBeVisible();
+  await footer.getByRole("link", { name: "Painel administrativo" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Acesso restrito" }),
+  ).toBeVisible();
+});

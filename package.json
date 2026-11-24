@@ -4,15 +4,19 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
+    "dev": "vite",
     "build": "vite build",
-    "test": "node --test tests/*.test.js",
+    "test": "node --test \"tests/*.test.js\"",
     "build:pages": "vite build && node scripts/prepare-pages.mjs",
     "test:responsive": "playwright test",
     "catalog:import": "node scripts/import-supabase.mjs",
     "build:production": "node scripts/check-production.mjs && npm run build:pages",
-    "format": "prettier --write src tests scripts vite.config.js playwright.config.js",
-    "format:check": "prettier --check src tests scripts vite.config.js playwright.config.js"
+    "format": "prettier --write src tests scripts supabase/functions vite.config.js playwright.config.js eslint.config.js",
+    "format:check": "prettier --check src tests scripts supabase/functions vite.config.js playwright.config.js eslint.config.js",
+    "dev:lan": "vite --host 0.0.0.0",
+    "catalog:audit": "node scripts/audit-catalog.mjs",
+    "lint": "eslint src",
+    "check:production": "node scripts/check-production.mjs"
   },
   "dependencies": {
     "@fontsource-variable/dm-sans": "^5.3.0",
@@ -27,7 +31,13 @@
     "@axe-core/playwright": "^4.14.0",
     "@electric-sql/pglite": "^0.5.16",
     "@playwright/test": "^1.65.1",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
     "prettier": "^3.10.1",
     "vite": "^6.1.0"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

@@ -9,7 +9,7 @@ import {
   reorderCategories,
 } from "./api";
 
-function CategoryRow({ category, count, first, last, busy, onAction }) {
+function CategoryRow({ category, count, first, last, busy, owner, onAction }) {
   const [name, setName] = useState(category.name);
   const changed = name.trim() && name.trim() !== category.name;
   return (
@@ -70,7 +70,7 @@ function CategoryRow({ category, count, first, last, busy, onAction }) {
             className="icon"
             aria-label={`Excluir ${category.name}`}
             title={count ? "Mova os produtos antes de excluir" : "Excluir"}
-            disabled={busy || count > 0}
+            disabled={!owner || busy || count > 0}
             onClick={() => onAction("delete")}
           >
             <Trash2 size={16} />
@@ -81,7 +81,7 @@ function CategoryRow({ category, count, first, last, busy, onAction }) {
   );
 }
 
-export default function AdminCategories({ onChange }) {
+export default function AdminCategories({ onChange, owner }) {
   const [categories, setCategories] = useState([]),
     [counts, setCounts] = useState({}),
     [draft, setDraft] = useState(""),
@@ -184,6 +184,7 @@ export default function AdminCategories({ onChange }) {
             first={i === 0}
             last={i === categories.length - 1}
             busy={busy}
+            owner={owner}
             onAction={action(c, i)}
           />
         ))}
