@@ -35,7 +35,7 @@ export default function AuthPanel({ onClose, recovery = false, onRecovered }) {
           throw new Error(
             "Não foi possível entrar. Verifique seu e-mail, senha e a confirmação da conta.",
           );
-        onClose();
+        onClose?.();
       } else if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
@@ -46,7 +46,7 @@ export default function AuthPanel({ onClose, recovery = false, onRecovered }) {
           throw new Error(
             "Não foi possível criar a conta. Verifique os dados ou tente recuperar seu acesso.",
           );
-        if (data.session) onClose();
+        if (data.session) onClose?.();
         else {
           setMessage(
             "Confira seu e-mail e confirme o cadastro para entrar. Se já tiver uma conta, use Entrar ou recupere o acesso.",
@@ -72,7 +72,7 @@ export default function AuthPanel({ onClose, recovery = false, onRecovered }) {
             "Não foi possível atualizar a senha. Abra um novo link de recuperação e tente novamente.",
           );
         onRecovered?.();
-        onClose();
+        onClose?.();
       }
     } catch (e) {
       setError(e.message);

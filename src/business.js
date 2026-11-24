@@ -1,10 +1,20 @@
-// Fill these only with verified company data. Empty fields stay hidden.
 export const BUSINESS_DETAILS = {
-  address: import.meta.env?.VITE_BUSINESS_ADDRESS || "",
-  cnpj: import.meta.env?.VITE_BUSINESS_CNPJ || "",
+  legalName: "Sanes Mais Comercial de Brindes e Servicos Graficos LTDA",
+  tradeName: "Sanes",
+  cnpj: import.meta.env?.VITE_BUSINESS_CNPJ || "11.893.105/0001-33",
+  address:
+    import.meta.env?.VITE_BUSINESS_ADDRESS ||
+    "Setor de Indústrias Gráficas, Quadra 06, 1205 — Zona Industrial, Brasília/DF, CEP 70.610-460",
+  phone: "(61) 3344-7389",
+  registrationStatus: "Ativa",
+  openedOn: "29/04/2010",
+  activity: "Impressão de material para uso publicitário (CNAE 18.13-0-01)",
   hours: import.meta.env?.VITE_BUSINESS_HOURS || "",
   email: import.meta.env?.VITE_BUSINESS_EMAIL || "",
 };
+export const DEVELOPMENT_CREDITS =
+  import.meta.env?.VITE_DEVELOPMENT_CREDITS ||
+  "Abner Oliveira e Matheus Rodrigues";
 export const FAQ_REVIEW_PENDING = true;
 export const FAQ_ITEMS = [
   {
