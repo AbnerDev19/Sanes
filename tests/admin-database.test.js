@@ -34,6 +34,7 @@ async function setup() {
     "202611230003_catalog_admin_uploads.sql",
     "202611230004_admin_ordering.sql",
     "202611240005_security.sql",
+    "202611240006_order_validation.sql",
   ])
     await db.exec(await migration(name));
   await db.query(
@@ -400,6 +401,105 @@ test("restrições de visitantes, proprietário, auditoria e limite global", asy
         )
       ).rows[0].rpc,
       null,
+    );
+  } finally {
+    await db.close();
+  }
+});
+
+test("validação rejeita opções, duplicatas e metadados incorretos", async () => {
+  const { db, as } = await setup();
+  try {
+    await db.query(
+      "update public.products set colors='[\"Pérola\"]' where id='SB-001'",
+    );
+    await assert.rejects(
+      db.query(
+        "update public.products set gallery='[\"javascript:alert(1)\"]'",
+      ),
+      /products_element_format/,
+    );
+    await assert.rejects(
+      db.query("update public.products set variants='[42]'"),
+      /products_element_format/,
+    );
+    await as(GUEST, true);
+    const png = path(GUEST);
+    const pdf = path(GUEST, "logo.pdf");
+    for (const file of [png, pdf])
+      await db.query(
+        'insert into storage.objects(bucket_id,name,metadata) values(\'order-files\',$1,\'{"mimetype":"image/png","size":123}\')',
+        [file],
+      );
+    const item = {
+      id: "SB-001",
+      qty: 30,
+      variant: "500 ml",
+      colors: [{ name: "PEROLA", qty: 15 }],
+    };
+    const submit = (items, data = customer) =>
+      db.query("select public.submit_order($1,$2,$3) as r", [
+        KEY,
+        JSON.stringify(items),
+        JSON.stringify(data),
+      ]);
+    await assert.rejects(
+      submit([{ ...item, variant: "" }]),
+      /Escolha um modelo/,
+    );
+    await assert.rejects(
+      submit([{ ...item, variant: "800 ml" }]),
+      /Modelo inválido/,
+    );
+    await assert.rejects(
+      submit([{ id: "SB-002", qty: 50, variant: "500 ml" }]),
+      /não possui modelos/,
+    );
+    await assert.rejects(
+      submit([{ ...item, colors: [{ name: "Azul" }] }]),
+      /Cor inválida/,
+    );
+    await assert.rejects(
+      submit([{ ...item, colors: [{ name: "perola" }, { name: "Pérola" }] }]),
+      /Cor repetida/,
+    );
+    await assert.rejects(
+      submit([{ ...item, colors: [{ name: "Pérola", qty: 0 }] }]),
+      /Quantidade por cor inválida/,
+    );
+    await assert.rejects(
+      submit([{ ...item, files: [{ path: pdf, name: "logo.pdf" }] }]),
+      /tipo do arquivo/,
+    );
+    await assert.rejects(
+      submit([{ ...item, files: [{ path: png, name: "logo\n.png" }] }]),
+      /Nome de arquivo/,
+    );
+    await assert.rejects(
+      submit([item], { ...customer, phone: "-".repeat(31) + customer.phone }),
+      /Telefone/,
+    );
+    const withLogo = { ...item, files: [{ path: png, name: "logo.png" }] };
+    await assert.rejects(submit([withLogo, withLogo]), /mais de uma vez/);
+    const order = (
+      await submit([withLogo, { id: "SB-002", qty: 50 }], {
+        ...customer,
+        name: "  Maria\nSouza ",
+        notes: "\n  Texto\t livre  ",
+      })
+    ).rows[0].r;
+    assert.equal(order.customer.name, "Maria Souza");
+    assert.equal(order.customer.phone, "61999990000");
+    assert.equal(order.customer.notes, "Texto  livre");
+    assert.deepEqual(
+      order.order_items.map(({ position, product_id }) => [
+        position,
+        product_id,
+      ]),
+      [
+        [1, "SB-001"],
+        [2, "SB-002"],
+      ],
     );
   } finally {
     await db.close();
