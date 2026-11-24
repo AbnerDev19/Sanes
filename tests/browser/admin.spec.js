@@ -103,7 +103,10 @@ test("Júnior edita produto, destaca, reordena e troca o WhatsApp", async ({
 test("novo produto aparece no catálogo da loja", async ({ page }) => {
   const state = await mockStore(page, { staff: true });
   await adminLogin(page);
-  await page.goto("/#/admin/produtos/novo");
+  await expect(
+    page.getByRole("heading", { name: "Pedidos", exact: true }),
+  ).toBeVisible();
+  await page.goto("/admin/produtos/novo");
   await expect(page.getByLabel("Código *")).toHaveValue("SB-112");
   await page.getByLabel("Nome *").fill("Caneca Cerâmica Sanes");
   await page.getByLabel("Categoria *").selectOption("Térmicos e bebidas");

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 
 const FIELDS =
   'input:not([type="hidden"]):not([disabled]),select:not([disabled]),textarea:not([disabled])';
@@ -13,17 +13,15 @@ export default function useDialogFocus(view, onClose) {
     trigger = useRef(null),
     close = useRef(onClose);
   close.current = onClose;
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!view) return;
     trigger.current = document.activeElement;
     document.body.style.overflow = "hidden";
-    const timer = setTimeout(() => {
-      const root = dialog.current;
-      (
-        root?.querySelector(FIELDS) ||
-        root?.querySelector('button:not([disabled]),[tabindex="0"]')
-      )?.focus();
-    }, 10);
+    const root = dialog.current;
+    (
+      root?.querySelector(FIELDS) ||
+      root?.querySelector('button:not([disabled]),[tabindex="0"]')
+    )?.focus({ preventScroll: true });
     const key = (e) => {
       if (e.key === "Escape") close.current();
       if (e.key !== "Tab") return;
@@ -46,7 +44,6 @@ export default function useDialogFocus(view, onClose) {
     };
     document.addEventListener("keydown", key);
     return () => {
-      clearTimeout(timer);
       document.body.style.overflow = "";
       document.removeEventListener("keydown", key);
       trigger.current?.focus();
