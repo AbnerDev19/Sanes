@@ -10,7 +10,7 @@ Catálogo digital e sistema de pedidos personalizados da Sanes Brindes. O client
 
 **Loja**
 
-- Catálogo com busca sem acento, abas de categoria, filtro por pedido mínimo, ordenação, destaques e página própria por produto (`#/produto/SB-104`), com galeria, cores e modelos.
+- Catálogo com busca sem acento, abas de categoria, filtro por pedido mínimo, ordenação, destaques e página própria por produto (`/produto/SB-104/` após o caminho base), com galeria, cores e modelos.
 - Personalização de cada item:
   - quantidade, respeitando o mínimo do produto;
   - uma ou mais cores, com divisão opcional da quantidade entre elas;
@@ -22,28 +22,31 @@ Catálogo digital e sistema de pedidos personalizados da Sanes Brindes. O client
 - Finalização:
   1. as logomarcas vão para um bucket **privado** do Supabase;
   2. o pedido é registrado pela função `submit_order`, que valida tudo no servidor;
-  3. o WhatsApp abre com a mensagem **NOVO PEDIDO — SANES BRINDES**, com links dos arquivos válidos por 30 dias e o link do pedido no painel.
+  3. o WhatsApp abre com a mensagem **NOVO PEDIDO — SANES BRINDES**, com um resumo e o link do pedido no painel. As logomarcas são acessadas pelo painel.
 
   Se o registro falhar, o cliente pode enviar a mensagem sem registro e anexar os arquivos manualmente na conversa.
 - Conta de cliente **opcional**, que guarda o histórico de pedidos.
 
-**Painel (`#/admin`, só para a equipe)**
+**Painel (`/admin`, só para a equipe)**
 
 - **Pedidos:** busca, filtro e status; detalhes com links para ver e baixar as logomarcas.
 - **Produtos:** criar, editar, excluir, fotos, cores, modelos, preço, ativar/desativar, destacar e ordenar.
 - **Categorias:** criar, renomear, ocultar, ordenar e excluir.
-- **Configurações:** número de WhatsApp que recebe os pedidos.
+- **Configurações (proprietário):** número de WhatsApp que recebe os pedidos.
 
 Guia de uso para a loja: [docs/GUIA-JUNIOR.md](docs/GUIA-JUNIOR.md).
 
 ## Desenvolvimento
 
 ```sh
+nvm use
 npm ci
 npm run dev
 npm test                 # unitários + SQL (PGlite)
 npm run test:responsive  # navegador (Playwright + axe)
 npm run build
+npm run lint
+npm run catalog:audit
 ```
 
 Os testes de navegador usam `/usr/bin/chromium` por padrão. Para usar outro navegador, defina `PLAYWRIGHT_CHROMIUM_EXECUTABLE` ou rode com `CI=true` depois de `npx playwright install chromium`.
@@ -52,7 +55,7 @@ Os testes de navegador usam `/usr/bin/chromium` por padrão. Para usar outro nav
 
 O passo a passo completo está em **[supabase/GUIA-ABNER.md](supabase/GUIA-ABNER.md)**:
 
-1. aplicar as migrações 001 a 004 no SQL Editor;
+1. aplicar as migrações pendentes, de 001 a 009 no SQL Editor;
 2. ligar o login anônimo, usado no upload das logomarcas de visitantes;
 3. dar acesso de equipe ao Júnior;
 4. importar o catálogo;
@@ -65,7 +68,7 @@ Variáveis públicas, todas com prefixo `VITE_`, listadas em `.env.example`: `SU
 
 - O número em uso fica na tabela `store_settings` e é alterado pelo painel.
 - `VITE_WHATSAPP` e o valor em `src/config.js` são só reservas, usadas quando o banco não está disponível.
-- Esses são os únicos lugares do código com o número.
+- A reserva de runtime e o SEO usam `src/config.js`. A migração histórica 003 contém o valor inicial do banco.
 
 ## Organização
 
@@ -80,7 +83,7 @@ Variáveis públicas, todas com prefixo `VITE_`, listadas em `.env.example`: `SU
 | `src/lib/attachments.js` | Arquivos guardados no navegador (IndexedDB) e verificação de tipo real |
 | `src/lib/useCatalog.js`, `useStore.js`, `storeSettings.jsx` | Catálogo, sessão/carrinho e configurações da loja |
 | `src/admin/` | Painel administrativo, carregado sob demanda |
-| `supabase/migrations/` | Schema, RLS, Storage e funções (001 a 004) |
+| `supabase/migrations/` | Schema, RLS, Storage e funções (001 a 009) |
 | `scripts/` | Importador do catálogo, checagem de produção, preparo do Pages e SEO |
 | `tests/` | Unitários, SQL e navegador (`tests/browser/`, com Supabase simulado) |
 
@@ -92,8 +95,8 @@ Variáveis públicas, todas com prefixo `VITE_`, listadas em `.env.example`: `SU
   - a equipe acessa por links temporários;
   - o bucket aceita só PNG, JPG ou PDF de até 10 MB;
   - o site confere a assinatura real do arquivo, não só a extensão;
-  - há limite de 40 arquivos por dia e 10 pedidos por hora por visitante.
-- Escrita no catálogo, nas categorias e nas configurações é permitida só a `store_members` com conta não anônima.
+  - há limite de 40 arquivos por dia e 10 pedidos por hora por usuário, além do limite global configurável.
+- A equipe edita catálogo, categorias e pedidos. Alterar configurações ou excluir produtos e categorias exige `owner`. A equipe pode ser obrigada a confirmar TOTP, conforme a configuração do banco.
 
 ## Publicação no Pages
 
@@ -104,5 +107,10 @@ Variáveis públicas, todas com prefixo `VITE_`, listadas em `.env.example`: `SU
 - 111 produtos em seis categorias. 24 têm foto real; os demais mostram "Foto em breve".
 - Não há preços inventados: aparece "Sob consulta" até a loja cadastrar um preço.
 - Cores, modelos e fotos novas são cadastrados pelo painel.
-- O PDF "SUGESTÕES DE BRINDES 2026" ainda não foi importado (passou do limite de envio) e está registrado em `catalog/import-report.json`. Enquanto isso, `npm run build:production` continua bloqueado de propósito.
-- A FAQ está marcada como provisória (`FAQ_REVIEW_PENDING` em `src/business.js`).
+- O PDF "SUGESTÕES DE BRINDES 2026" ainda não foi importado (passou do limite de envio) e está registrado em `catalog/import-report.json`. A publicação exige a importação do PDF ou o aceite explícito `CATALOG_PENDING_ACCEPTED=true`.
+- A FAQ está marcada como provisória (`FAQ_REVIEW_PENDING` em `src/business.js`) e não bloqueia o build.
+
+
+## Atendimento e privacidade
+
+O comprador acessa `/conta`, e a equipe usa `/admin`. Os links antigos com hash continuam funcionando. As páginas de produto são geradas com metadados próprios no build. `/privacidade` e `/termos` são minutas para revisão jurídica. O [Guia do Abner](supabase/GUIA-ABNER.md) inclui notificações opcionais, retenção, domínio próprio, checklist de publicação e runbook de incidente.

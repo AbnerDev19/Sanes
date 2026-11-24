@@ -24,7 +24,7 @@ export default function AdminSettings() {
     setError("");
     setMessage("");
     if (!normalized) {
-      setError("Informe um celular com DDD, por exemplo (61) 98133-3737.");
+      setError("Informe um celular com DDD, por exemplo (11) 99999-9999.");
       return;
     }
     setBusy(true);
@@ -61,7 +61,7 @@ export default function AdminSettings() {
             type="tel"
             inputMode="tel"
             autoComplete="off"
-            placeholder="(61) 98133-3737"
+            placeholder="(11) 99999-9999"
             value={value}
             maxLength={16}
             onChange={(e) => setValue(formatBrazilianPhone(e.target.value))}

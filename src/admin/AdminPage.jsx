@@ -1,3 +1,4 @@
+import { useAuthCaptcha } from "../components/CheckoutCaptcha";
 import { appPath } from "../lib/routes";
 import { useState } from "react";
 import {
@@ -15,6 +16,8 @@ import AdminOrders, { AdminOrderDetail } from "./AdminOrders";
 import AdminProducts from "./AdminProducts";
 import ProductEditor from "./ProductEditor";
 import AdminCategories from "./AdminCategories";
+import AdminMfa, { verifiedStaffSession } from "./AdminMfa";
+import { useStoreSettings } from "../lib/storeSettings";
 import AdminSettings from "./AdminSettings";
 import "./admin.css";
 
@@ -31,28 +34,59 @@ function AdminLogin() {
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [message, setMessage] = useState("");
-  const submit = async (e) => {
-    e.preventDefault();
+  const captcha = useAuthCaptcha(true);
+  const canProceed = () => {
     setError("");
+    setMessage("");
+    if (!captcha.required || captcha.token) return true;
+    setError("Complete a verificação de segurança antes de continuar.");
+    return false;
+  };
+  const submit = async (event) => {
+    event.preventDefault();
+    if (!canProceed()) return;
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-    setBusy(false);
-    if (error) setError("E-mail ou senha incorretos.");
+    try {
+      const { error: failure } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+        options: { captchaToken: captcha.token || undefined },
+      });
+      if (failure) throw failure;
+    } catch {
+      setError(
+        "Não foi possível entrar. Confira o e-mail, a senha e a verificação de segurança.",
+      );
+    } finally {
+      if (captcha.required) captcha.reset();
+      setBusy(false);
+    }
   };
   const reset = async () => {
-    setError("");
+    if (!canProceed()) return;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       setError("Digite seu e-mail acima para receber o link.");
       return;
     }
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: new URL(appPath(), location.origin).href,
-    });
-    if (error) setError("Não foi possível enviar o e-mail agora.");
-    else setMessage("Enviamos um link para criar uma nova senha.");
+    setBusy(true);
+    try {
+      const { error: failure } = await supabase.auth.resetPasswordForEmail(
+        email.trim(),
+        {
+          redirectTo: new URL(appPath(), location.origin).href,
+          captchaToken: captcha.token || undefined,
+        },
+      );
+      if (failure) throw failure;
+      setMessage(
+        "Se houver uma conta com esse e-mail, você receberá um link para criar uma nova senha.",
+      );
+    } catch {
+      setError("Não foi possível solicitar o e-mail agora.");
+    } finally {
+      if (captcha.required) captcha.reset();
+      setBusy(false);
+    }
   };
   return (
     <form className="admin-card admin-login" onSubmit={submit}>
@@ -78,6 +112,7 @@ function AdminLogin() {
           onChange={(e) => setPassword(e.target.value)}
         />
       </label>
+      {captcha.widget}
       {error && (
         <p className="error" role="alert">
           {error}
@@ -87,7 +122,12 @@ function AdminLogin() {
       <button className="btn primary full" disabled={busy}>
         {busy ? "Entrando…" : "Entrar"}
       </button>
-      <button type="button" className="text-link full center" onClick={reset}>
+      <button
+        type="button"
+        className="text-link full center"
+        disabled={busy}
+        onClick={reset}
+      >
         Esqueci minha senha
       </button>
     </form>
@@ -117,6 +157,7 @@ export default function AdminPage({
   onRecovered,
   onCatalogChange,
 }) {
+  const { mfaRequired, loading: settingsLoading } = useStoreSettings();
   if (!supabase)
     return (
       <Gate>
@@ -163,6 +204,19 @@ export default function AdminPage({
             Sair
           </button>
         </div>
+      </Gate>
+    );
+
+  if (settingsLoading)
+    return (
+      <Gate>
+        <p role="status">Carregando configurações…</p>
+      </Gate>
+    );
+  if (mfaRequired && !verifiedStaffSession(session))
+    return (
+      <Gate>
+        <AdminMfa onSignOut={signOut} />
       </Gate>
     );
 

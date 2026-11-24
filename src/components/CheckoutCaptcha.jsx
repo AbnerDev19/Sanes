@@ -67,3 +67,21 @@ export default function CheckoutCaptcha({ siteKey, onToken, attempt }) {
     </>
   );
 }
+
+export function useAuthCaptcha(active) {
+  const siteKey = import.meta.env.VITE_CAPTCHA_SITE_KEY || "";
+  const [token, onToken] = useState("");
+  const [attempt, setAttempt] = useState(0);
+  const required = Boolean(siteKey && active);
+  return {
+    required,
+    token,
+    reset: () => {
+      onToken("");
+      setAttempt((value) => value + 1);
+    },
+    widget: required && (
+      <CheckoutCaptcha siteKey={siteKey} onToken={onToken} attempt={attempt} />
+    ),
+  };
+}

@@ -140,7 +140,7 @@ export default function Checkout({
           inputMode="tel"
           required
           maxLength={16}
-          placeholder="(61) 98133-3737"
+          placeholder="(11) 99999-9999"
           onChange={(e) =>
             setCustomer({
               ...customer,

@@ -11,7 +11,7 @@ const SUPABASE_STUBS = `create role anon;create role authenticated;create role s
  create schema auth;
  create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,created_at timestamptz default now(),last_sign_in_at timestamptz,is_anonymous boolean not null default false);
  create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
- create function auth.jwt() returns jsonb language sql stable as $$select jsonb_build_object('is_anonymous',coalesce(nullif(current_setting('request.jwt.claim.anon',true),''),'false')::boolean)$$;
+ create function auth.jwt() returns jsonb language sql stable as $$select jsonb_build_object('is_anonymous',coalesce(nullif(current_setting('request.jwt.claim.anon',true),''),'false')::boolean,'aal',coalesce(nullif(current_setting('request.jwt.claim.aal',true),''),'aal1'))$$;
  grant usage on schema auth to anon,authenticated;
  create schema storage;grant usage on schema storage to anon,authenticated;
  create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
@@ -37,6 +37,7 @@ async function setup() {
     "202611240006_order_validation.sql",
     "202611240007_retention.sql",
     "202611240008_catalog_fields.sql",
+    "202611240009_staff_mfa.sql",
   ])
     await db.exec(await migration(name));
   await db.query(
@@ -253,6 +254,13 @@ test("visitante envia logomarca e pedido; arquivos ficam privados", async () => 
   await db.query("select public.update_order_status($1,'in_contact')", [
     order.id,
   ]);
+  await db.query("select public.update_order_status($1,'completed')", [
+    order.id,
+  ]);
+  await assert.rejects(
+    db.query("select public.update_order_status($1,'requested')", [order.id]),
+    /mudança de status/,
+  );
   await db.close();
 });
 
@@ -586,6 +594,94 @@ test("importação em lote mantém categoria, mínimo e capa editados", async ()
     assert.equal(row.min_confirmed, false);
     assert.equal(row.category, "Térmicos e bebidas");
     assert.equal(row.image_url, "https://cdn.example.com/foto.webp");
+  } finally {
+    await db.close();
+  }
+});
+
+test("MFA opt-in exige aal2 para alterações de equipe", async () => {
+  const { db, as } = await setup();
+  try {
+    await db.exec("update public.store_settings set staff_mfa_required=true");
+    await as(OWNER);
+    await assert.rejects(
+      db.query("select public.reorder_products(array['SB-001'])"),
+      /Acesso restrito/,
+    );
+    assert.equal(
+      (
+        await db.query(
+          "update public.store_settings set whatsapp='5561999990000' returning id",
+        )
+      ).rows.length,
+      0,
+    );
+    await db.query("select set_config('request.jwt.claim.aal','aal2',false)");
+    assert.equal(
+      (
+        await db.query(
+          "update public.store_settings set whatsapp='5561999990000' returning id",
+        )
+      ).rows.length,
+      1,
+    );
+    await assert.rejects(
+      db.query("update public.store_settings set staff_mfa_required=false"),
+      /permission denied/,
+    );
+  } finally {
+    await db.close();
+  }
+});
+
+test("limpeza de perfil anônimo só roda com prazo e a busca usa índice de prefixo", async () => {
+  const { db, as } = await setup();
+  try {
+    await db.query(
+      "update auth.users set created_at=now()-interval '5 days' where id=$1",
+      [GUEST],
+    );
+    await db.query("insert into public.profiles(id) values($1),($2)", [
+      GUEST,
+      OWNER,
+    ]);
+    await db.query("insert into public.carts(user_id) values($1),($2)", [
+      GUEST,
+      OWNER,
+    ]);
+    assert.equal(
+      (await db.query("select public.cleanup_anonymous_profiles() as n"))
+        .rows[0].n,
+      0,
+    );
+    await db.exec(
+      "update public.store_settings set anonymous_retention_days=3",
+    );
+    assert.equal(
+      (await db.query("select public.cleanup_anonymous_profiles() as n"))
+        .rows[0].n,
+      2,
+    );
+    assert.equal(
+      (await db.query("select count(*)::integer as n from public.profiles"))
+        .rows[0].n,
+      1,
+    );
+    await as(GUEST, true);
+    await assert.rejects(
+      db.query("select public.cleanup_anonymous_profiles()"),
+      /permission denied/,
+    );
+    await db.exec("reset role; set enable_seqscan=off");
+    const plan = await db.query(
+      `explain select count(*) from storage.objects where bucket_id='order-files'
+      and name collate "C" >= $1 || '/' and name collate "C" < $1 || '0'`,
+      [GUEST],
+    );
+    assert.match(
+      plan.rows.map((row) => row["QUERY PLAN"]).join("\n"),
+      /order_files_storage_prefix/,
+    );
   } finally {
     await db.close();
   }

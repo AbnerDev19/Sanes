@@ -3,7 +3,12 @@ import { orderNotice } from "./notification.mjs";
 
 Deno.serve(async (request) => {
   if (request.method !== "POST") return new Response(null, { status: 405 });
-  if (!(await sameSecret(request.headers.get("x-sanes-webhook-secret"), Deno.env.get("ORDER_WEBHOOK_SECRET")))) {
+  if (
+    !(await sameSecret(
+      request.headers.get("x-sanes-webhook-secret"),
+      Deno.env.get("ORDER_WEBHOOK_SECRET"),
+    ))
+  ) {
     return new Response(null, { status: 401 });
   }
   const key = Deno.env.get("RESEND_API_KEY");
