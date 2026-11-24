@@ -4,6 +4,13 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # eslint-plugin-react 7 aceita ESLint até a versão 9.
+      - dependency-name: eslint
+        update-types: ["version-update:semver-major"]
+      # A migração dos ícones para 1.x deve incluir revisão visual e o build legado.
+      - dependency-name: lucide-react
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
