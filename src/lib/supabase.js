@@ -38,7 +38,10 @@ export function mapProduct(p) {
     nome: p.name,
     categoria: normalizeCategory(p.category),
     capacidade: p.capacity,
-    desc: p.description,
+    material: p.material,
+    desc: /a confirmar com a equipe Sanes\.?$/i.test(p.description || "")
+      ? ""
+      : p.description,
     dim: p.dimensions,
     min: p.min_qty,
     min_confirmed: p.min_confirmed,

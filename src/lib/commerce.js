@@ -82,6 +82,7 @@ export function cleanCart(items, products) {
             ? item.key.slice(0, 80)
             : `restored-${index}-${p.id}`,
         qty: item.qty,
+        minimumUnconfirmed: p.min_confirmed === false,
         colors: cleanColors(item.colors ?? legacyColor, item.qty),
         variant: text(item.variant, 80),
         method: LEGACY_PLACEHOLDERS.test(method) ? "" : method,
@@ -248,6 +249,7 @@ export function orderToMessageItems(order) {
     id: i.product_id,
     name: i.product_name,
     qty: i.quantity,
+    minimumUnconfirmed: i.source_min_confirmed === false,
     colors:
       Array.isArray(i.colors) && i.colors.length
         ? i.colors

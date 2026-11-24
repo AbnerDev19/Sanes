@@ -14,6 +14,7 @@ const BLANK = {
   name: "",
   category: "",
   capacity: "",
+  material: "",
   description: "",
   dimensions: "",
   min_qty: 30,
@@ -198,6 +199,7 @@ export default function ProductEditor({ id, onSaved, owner }) {
         name: form.name.trim(),
         category: form.category,
         capacity: form.capacity.trim(),
+        material: (form.material || "").trim(),
         description: form.description.trim(),
         dimensions: form.dimensions.trim() || null,
         min_qty: min,
@@ -308,9 +310,17 @@ export default function ProductEditor({ id, onSaved, owner }) {
               onChange={(e) => set({ description: e.target.value })}
             />
           </label>
+          <label>
+            Material
+            <input
+              value={form.material || ""}
+              maxLength={120}
+              onChange={(e) => set({ material: e.target.value })}
+            />
+          </label>
           <div className="form-row">
             <label>
-              Capacidade / especificação
+              Capacidade
               <input
                 value={form.capacity}
                 maxLength={120}

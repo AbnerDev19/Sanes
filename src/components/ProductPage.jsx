@@ -33,10 +33,16 @@ export default function ProductPage({ product, onCustomize }) {
             {product.categoria} · {product.id}
           </div>
           <h1>{product.nome}</h1>
-          <p>{product.desc}</p>
+          {product.desc && <p>{product.desc}</p>}
           <dl>
             <dt>Capacidade / especificação</dt>
             <dd>{product.capacidade || "Especificação a confirmar"}</dd>
+            {product.material && (
+              <>
+                <dt>Material</dt>
+                <dd>{product.material}</dd>
+              </>
+            )}
             <dt>Pedido mínimo</dt>
             <dd>
               {product.min_confirmed === false

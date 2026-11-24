@@ -36,6 +36,7 @@ async function setup() {
     "202611240005_security.sql",
     "202611240006_order_validation.sql",
     "202611240007_retention.sql",
+    "202611240008_catalog_fields.sql",
   ])
     await db.exec(await migration(name));
   await db.query(
@@ -548,6 +549,43 @@ test("retenção agenda a remoção de órfãos, sem apagar objetos por SQL", as
       ).rows[0].n,
       1,
     );
+  } finally {
+    await db.close();
+  }
+});
+
+test("importação em lote mantém categoria, mínimo e capa editados", async () => {
+  const { db, as } = await setup();
+  try {
+    await db.query(
+      "update public.products set image_url='https://cdn.example.com/foto.webp', min_qty=75, min_confirmed=false where id='SB-001'",
+    );
+    await as(OWNER);
+    await assert.rejects(
+      db.query("select * from public.update_imported_catalog('[]')"),
+      /permission denied/,
+    );
+    await db.exec("reset role");
+    await db.query("select * from public.update_imported_catalog($1)", [
+      JSON.stringify([
+        {
+          id: "SB-001",
+          category: "Canetas",
+          name: "Térmica",
+          material: "Inox",
+          image_url: null,
+        },
+      ]),
+    ]);
+    const {
+      rows: [row],
+    } = await db.query("select * from public.products where id='SB-001'");
+    assert.equal(row.name, "Térmica");
+    assert.equal(row.material, "Inox");
+    assert.equal(row.min_qty, 75);
+    assert.equal(row.min_confirmed, false);
+    assert.equal(row.category, "Térmicos e bebidas");
+    assert.equal(row.image_url, "https://cdn.example.com/foto.webp");
   } finally {
     await db.close();
   }

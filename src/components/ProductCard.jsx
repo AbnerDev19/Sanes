@@ -18,7 +18,8 @@ export default function ProductCard({
         {p.featured ? (
           <span className="product-badge featured">Destaque</span>
         ) : (
-          p.imagem && <span className="product-badge">{p.capacidade}</span>
+          p.imagem &&
+          p.capacidade && <span className="product-badge">{p.capacidade}</span>
         )}
         <button
           className="product-image-button"
@@ -40,9 +41,10 @@ export default function ProductCard({
           <a href={productHash(p.id)}>{p.nome}</a>
         </h3>
         <small className="product-capacity">
-          {p.capacidade || "Especificação a confirmar"}
+          {[p.capacidade, p.material, p.dim].filter(Boolean).join(" · ") ||
+            "Especificação a confirmar"}
         </small>
-        <p>{p.desc}</p>
+        {p.desc && <p>{p.desc}</p>}
         {p.colors?.length > 0 && (
           <small className="product-colors">
             {p.colors.length === 1

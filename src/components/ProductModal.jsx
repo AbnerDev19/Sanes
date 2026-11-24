@@ -67,9 +67,9 @@ export default function ProductModal({ product: p, form, onAdd, editing }) {
           {p.codigo} · {p.categoria}
         </div>
         <h2 id="dialog-title">{p.nome}</h2>
-        <p>{p.desc}</p>
+        {p.desc && <p>{p.desc}</p>}
         <span className="spec">
-          {p.capacidade}
+          {[p.capacidade, p.material].filter(Boolean).join(" · ")}
           {p.dim && ` · ${p.dim}`}
         </span>
         <h3>{editing ? "Editar item" : "Monte seu item"}</h3>
@@ -152,15 +152,6 @@ export default function ProductModal({ product: p, form, onAdd, editing }) {
                 </small>
               </div>
             )}
-            <label>
-              Outra cor (opcional)
-              <input
-                maxLength={120}
-                placeholder="Ex.: Pantone da sua marca"
-                value={values.customColor}
-                onChange={(e) => set({ customColor: e.target.value })}
-              />
-            </label>
           </fieldset>
         ) : (
           <label>

@@ -20,6 +20,7 @@ function CartItem({ item, minimum, missing, onQty, onEdit, onRemove }) {
         <div>
           <small>{item.id}</small>
           <h3>{item.name}</h3>
+          {item.minimumUnconfirmed && <p>Pedido mínimo a confirmar</p>}
         </div>
         <div className="cart-item-actions">
           <button
