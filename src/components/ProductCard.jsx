@@ -1,7 +1,7 @@
+import { productPath } from "../lib/routes";
 import { ArrowUpRight, Plus } from "lucide-react";
 import IMG from "./ProductImage";
 import { money } from "../lib/supabase";
-import { productHash } from "../lib/catalog";
 export default function ProductCard({
   product: p,
   index: i,
@@ -38,7 +38,7 @@ export default function ProductCard({
           <span>{p.codigo}</span>
         </div>
         <h3>
-          <a href={productHash(p.id)}>{p.nome}</a>
+          <a href={productPath(p.id)}>{p.nome}</a>
         </h3>
         <small className="product-capacity">
           {[p.capacidade, p.material, p.dim].filter(Boolean).join(" · ") ||

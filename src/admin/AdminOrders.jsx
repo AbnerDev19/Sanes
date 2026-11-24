@@ -1,3 +1,4 @@
+import { appPath } from "../lib/routes";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
@@ -147,7 +148,7 @@ export default function AdminOrders() {
       <ul className="admin-list orders">
         {shown.map((o) => (
           <li key={o.id}>
-            <a href={`#/admin/pedidos/${o.id}`} className="admin-row">
+            <a href={appPath(`admin/pedidos/${o.id}`)} className="admin-row">
               <span className="order-number">#{o.number}</span>
               <span className="row-main">
                 <strong>{o.customer?.name}</strong>
@@ -214,7 +215,7 @@ export function AdminOrderDetail({ id }) {
     load();
   }, [id]);
   const back = (
-    <a className="text-link" href="#/admin/pedidos">
+    <a className="text-link" href={appPath("admin/pedidos")}>
       <ArrowLeft size={16} /> Todos os pedidos
     </a>
   );

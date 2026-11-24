@@ -1,3 +1,4 @@
+import { appPath } from "../lib/routes";
 import CheckoutCaptcha from "./CheckoutCaptcha";
 import {
   Check,
@@ -225,11 +226,15 @@ export default function Checkout({
       <p className="field-help">
         Ao finalizar, você concorda com o uso dos dados e arquivos para atender
         seu pedido de orçamento. Leia a{" "}
-        <a href="#/privacidade" target="_blank" rel="noopener noreferrer">
+        <a
+          href={appPath("privacidade")}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           Política de Privacidade
         </a>{" "}
         e os{" "}
-        <a href="#/termos" target="_blank" rel="noopener noreferrer">
+        <a href={appPath("termos")} target="_blank" rel="noopener noreferrer">
           Termos de uso
         </a>
         .

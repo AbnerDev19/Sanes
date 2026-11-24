@@ -1,3 +1,4 @@
+import { appPath } from "../lib/routes";
 import { useEffect, useState } from "react";
 import { ArrowLeft, ImagePlus, Star, Trash2, X, Plus } from "lucide-react";
 import {
@@ -220,7 +221,7 @@ export default function ProductEditor({ id, onSaved, owner }) {
         history.replaceState(
           null,
           "",
-          `#/admin/produtos/${encodeURIComponent(row.id)}`,
+          appPath(`admin/produtos/${encodeURIComponent(row.id)}`),
         );
         setCreated(true);
       }
@@ -239,7 +240,7 @@ export default function ProductEditor({ id, onSaved, owner }) {
       await deleteProduct(form.id);
       await Promise.all(pictures.map(removeProductImage)).catch(() => {});
       onSaved();
-      location.hash = "#/admin/produtos";
+      location.assign(appPath("admin/produtos"));
     } catch (err) {
       setError(err.message);
       setConfirmDelete(false);
@@ -249,7 +250,7 @@ export default function ProductEditor({ id, onSaved, owner }) {
   };
 
   const back = (
-    <a className="text-link" href="#/admin/produtos">
+    <a className="text-link" href={appPath("admin/produtos")}>
       <ArrowLeft size={16} /> Todos os produtos
     </a>
   );

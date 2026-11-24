@@ -1,3 +1,4 @@
+import { appPath } from "./routes";
 import { createClient } from "@supabase/supabase-js";
 import { normalizeCategory } from "./catalog";
 import { assertPublicKey } from "./publicConfig";
@@ -26,11 +27,7 @@ export const supabase = supabaseConfigured
       },
     })
   : null;
-export const siteUrl = () =>
-  new URL(
-    import.meta.env.BASE_URL,
-    window.location.origin + window.location.pathname,
-  ).href.split("#")[0];
+export const siteUrl = () => new URL(appPath(), window.location.origin).href;
 export function mapProduct(p) {
   return {
     id: p.id,

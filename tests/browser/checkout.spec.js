@@ -75,7 +75,7 @@ test("visitante envia pedido com logomarca: arquivo fica no painel vinculado ao 
     "Telefone: (61) 99999-0000",
     "Garrafa Térmica Munique (SB-001): 30 un.",
     "Preto, Azul · 750 ml",
-    "#/admin/pedidos/",
+    "/admin/pedidos/",
   ])
     expect(text).toContain(part);
   expect(text).not.toContain("/storage/v1/object/sign/");

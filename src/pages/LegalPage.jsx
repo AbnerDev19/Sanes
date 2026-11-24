@@ -1,3 +1,4 @@
+import { appPath } from "../lib/routes";
 import { formatWhatsapp, whatsappLink } from "../config";
 import { useStoreSettings } from "../lib/storeSettings";
 
@@ -53,7 +54,7 @@ export default function LegalPage({ privacy }) {
           </p>
           <p>
             Consulte também a{" "}
-            <a href="#/privacidade">Política de Privacidade</a>.
+            <a href={appPath("privacidade")}>Política de Privacidade</a>.
           </p>
         </>
       )}

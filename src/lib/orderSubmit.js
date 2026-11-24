@@ -11,7 +11,7 @@ export class SubmitError extends Error {
   }
 }
 
-export const adminOrderLink = (id) => `${siteUrl()}#/admin/pedidos/${id}`;
+export const adminOrderLink = (id) => `${siteUrl()}admin/pedidos/${id}`;
 
 // Mensagem sem registro no sistema: arquivos vão anexados à mão na conversa.
 export function manualMessage({ cart, customer, notes }) {

@@ -1,26 +1,26 @@
+import { appPath, productPath } from "../lib/routes";
 import { ArrowLeft, MessageCircle, Plus } from "lucide-react";
 import { ProductGallery } from "./ProductModal";
 import { money } from "../lib/supabase";
-import { productHash } from "../lib/catalog";
 export default function ProductPage({ product, onCustomize }) {
   if (!product)
     return (
       <section className="product-page wrap">
         <h1>Produto não encontrado</h1>
         <p>Este link não corresponde a um produto disponível no catálogo.</p>
-        <a className="btn outline" href="#catalogo">
+        <a className="btn outline" href={appPath("#catalogo")}>
           Voltar ao catálogo
         </a>
       </section>
     );
   const url = new URL(
-    productHash(product.id),
+    productPath(product.id),
     location.origin + location.pathname,
   ).href;
   const share = `https://wa.me/?text=${encodeURIComponent(`Veja ${product.nome} no catálogo Sanes Brindes: ${url}`)}`;
   return (
     <section className="product-page wrap">
-      <a className="text-link" href="#catalogo">
+      <a className="text-link" href={appPath("#catalogo")}>
         <ArrowLeft size={18} />
         Voltar ao catálogo
       </a>

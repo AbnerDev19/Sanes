@@ -1,3 +1,4 @@
+import { appPath } from "../lib/routes";
 import { useState } from "react";
 import {
   ClipboardList,
@@ -48,7 +49,7 @@ function AdminLogin() {
       return;
     }
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: location.href.split("#")[0],
+      redirectTo: new URL(appPath(), location.origin).href,
     });
     if (error) setError("Não foi possível enviar o e-mail agora.");
     else setMessage("Enviamos um link para criar uma nova senha.");
@@ -98,7 +99,7 @@ function Gate({ children }) {
     <main className="admin-gate">
       <Brand />
       {children}
-      <a className="text-link" href="#inicio">
+      <a className="text-link" href={appPath("#inicio")}>
         Voltar para a loja
       </a>
     </main>
@@ -193,7 +194,7 @@ export default function AdminPage({
     content = (
       <div className="admin-card">
         <h1>Página não encontrada</h1>
-        <a href="#/admin">Ir para os pedidos</a>
+        <a href={appPath("admin")}>Ir para os pedidos</a>
       </div>
     );
 
@@ -204,7 +205,7 @@ export default function AdminPage({
           <Brand />
           <span className="admin-tag">Painel</span>
           <div className="admin-header-actions">
-            <a className="text-link" href="#inicio">
+            <a className="text-link" href={appPath("#inicio")}>
               <Store size={16} /> <span>Ver loja</span>
             </a>
             <button className="text-link" onClick={signOut}>
@@ -217,7 +218,7 @@ export default function AdminPage({
             ([href, label, Icon]) => (
               <a
                 key={href}
-                href={`#/admin${href}`}
+                href={appPath(`admin${href}`)}
                 aria-current={`/${section}` === href ? "page" : undefined}
               >
                 <Icon size={17} aria-hidden="true" />

@@ -1,3 +1,4 @@
+import { appPath } from "../lib/routes";
 import Brand from "./Brand";
 import { BUSINESS_DETAILS, DEVELOPMENT_CREDITS } from "../business";
 import { formatWhatsapp, whatsappLink } from "../config";
@@ -35,14 +36,14 @@ export default function Footer() {
     <footer className="wrap">
       <div className="footer-top">
         <Brand />
-        <a href="#inicio">Voltar ao topo ↑</a>
+        <a href={appPath("#inicio")}>Voltar ao topo ↑</a>
       </div>
       <nav className="footer-links" aria-label="Links do rodapé">
-        <a href="#/conta">Área do comprador</a>
-        <a href="#/admin">Painel administrativo</a>
-        <a href="#/privacidade">Política de Privacidade</a>
-        <a href="#/termos">Termos de uso</a>
-        <a href="#faq">Dúvidas frequentes</a>
+        <a href={appPath("conta")}>Área do comprador</a>
+        <a href={appPath("admin")}>Painel administrativo</a>
+        <a href={appPath("privacidade")}>Política de Privacidade</a>
+        <a href={appPath("termos")}>Termos de uso</a>
+        <a href={appPath("#faq")}>Dúvidas frequentes</a>
       </nav>
       <dl className="business-details">
         {details
