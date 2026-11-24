@@ -61,14 +61,23 @@ alter table public.carts enable row level security;
 alter table public.store_members enable row level security;
 alter table public.orders enable row level security;
 alter table public.order_items enable row level security;
+drop policy if exists products_public_read on public.products;
 create policy products_public_read on public.products for select to anon,authenticated using(active);
+drop policy if exists products_staff_read on public.products;
 create policy products_staff_read on public.products for select to authenticated using((select public.is_store_member()));
+drop policy if exists profile_read on public.profiles;
 create policy profile_read on public.profiles for select to authenticated using(id=(select auth.uid()));
+drop policy if exists profile_insert on public.profiles;
 create policy profile_insert on public.profiles for insert to authenticated with check(id=(select auth.uid()));
+drop policy if exists profile_update on public.profiles;
 create policy profile_update on public.profiles for update to authenticated using(id=(select auth.uid())) with check(id=(select auth.uid()));
+drop policy if exists cart_owner on public.carts;
 create policy cart_owner on public.carts for all to authenticated using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
+drop policy if exists member_self on public.store_members;
 create policy member_self on public.store_members for select to authenticated using(user_id=(select auth.uid()));
+drop policy if exists order_read on public.orders;
 create policy order_read on public.orders for select to authenticated using(user_id=(select auth.uid()) or (select public.is_store_member()));
+drop policy if exists item_read on public.order_items;
 create policy item_read on public.order_items for select to authenticated using(exists(select 1 from public.orders o where o.id=order_id and (o.user_id=(select auth.uid()) or (select public.is_store_member()))));
 -- Order writes go through a validated, idempotent transaction. Clients cannot
 -- supply prices, assign another customer, or mark an order as paid/confirmed.
@@ -140,5 +149,6 @@ grant all on public.products,public.profiles,public.carts,public.store_members,p
 -- no private customer uploads are made public by this migration.
 insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
 values('catalog','catalog',true,10485760,array['image/webp','image/jpeg','image/png']) on conflict(id) do nothing;
+drop policy if exists catalog_picture_read on storage.objects;
 create policy catalog_picture_read on storage.objects for select to anon,authenticated using(bucket_id='catalog');
 commit;

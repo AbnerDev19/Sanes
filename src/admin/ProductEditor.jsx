@@ -150,7 +150,7 @@ export default function ProductEditor({ id, onSaved, owner }) {
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [id, isNew]);
 
   const pictures = [form.image_url, ...form.gallery].filter(Boolean);
   const setPictures = (list) =>

@@ -1,7 +1,7 @@
 // Único ponto do código com o WhatsApp de destino. Em produção o número vem da
 // tabela store_settings (alterado no painel administrativo); VITE_WHATSAPP e o
 // valor abaixo são apenas reservas para quando o banco não estiver disponível.
-const FALLBACK_WHATSAPP = "5561981333737";
+export const FALLBACK_WHATSAPP = "5561981333737";
 
 export function normalizeWhatsapp(value) {
   const digits = String(value || "").replace(/\D/g, "");

@@ -24,7 +24,7 @@ export function AttachmentThumb({ file }) {
       active = false;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [file.id]);
+  }, [file.id, file.type]);
   if (missing)
     return (
       <span className="attachment-thumb missing" title="Arquivo indisponível">

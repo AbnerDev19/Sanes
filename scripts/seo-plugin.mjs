@@ -1,5 +1,6 @@
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
+import { FALLBACK_WHATSAPP, normalizeWhatsapp } from "../src/config.js";
 import products from "../catalog/products.json" with { type: "json" };
 import {
   canonicalSite,
@@ -17,7 +18,7 @@ export function seoPlugin(env, root) {
     email: env.VITE_BUSINESS_EMAIL || "",
   };
   const data = structuredCatalog(products, site, {
-    whatsapp: (env.VITE_WHATSAPP || "5561981333737").replace(/\D/g, ""),
+    whatsapp: normalizeWhatsapp(env.VITE_WHATSAPP) || FALLBACK_WHATSAPP,
     business,
   });
   const files = discoveryFiles(site);
