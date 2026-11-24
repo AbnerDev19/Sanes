@@ -207,7 +207,7 @@ test("cliente com conta registra o pedido e ele aparece no histórico", async ({
   ).toBeVisible();
   expect(state.uploads).toHaveLength(0);
   expect(state.calls[0].p_items[0].qty).toBe(30);
-  expect(await message(page)).toContain("Logomarca: Não enviada");
+  expect(await message(page)).not.toContain("Logomarca:");
   await page.getByRole("button", { name: "Fechar", exact: true }).click();
   await page.getByRole("button", { name: "Minha conta", exact: true }).click();
   await expect(

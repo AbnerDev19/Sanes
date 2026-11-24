@@ -40,6 +40,8 @@ export default function Footer() {
       <nav className="footer-links" aria-label="Links do rodapé">
         <a href="#/conta">Área do comprador</a>
         <a href="#/admin">Painel administrativo</a>
+        <a href="#/privacidade">Política de Privacidade</a>
+        <a href="#/termos">Termos de uso</a>
         <a href="#faq">Dúvidas frequentes</a>
       </nav>
       <dl className="business-details">

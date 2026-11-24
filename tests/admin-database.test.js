@@ -9,7 +9,7 @@ const migration = (name) =>
 // Estruturas mínimas de Auth/Storage do Supabase para rodar o SQL localmente.
 const SUPABASE_STUBS = `create role anon;create role authenticated;create role service_role bypassrls;
  create schema auth;
- create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,is_anonymous boolean not null default false);
+ create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,created_at timestamptz default now(),last_sign_in_at timestamptz,is_anonymous boolean not null default false);
  create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
  create function auth.jwt() returns jsonb language sql stable as $$select jsonb_build_object('is_anonymous',coalesce(nullif(current_setting('request.jwt.claim.anon',true),''),'false')::boolean)$$;
  grant usage on schema auth to anon,authenticated;
@@ -35,6 +35,7 @@ async function setup() {
     "202611230004_admin_ordering.sql",
     "202611240005_security.sql",
     "202611240006_order_validation.sql",
+    "202611240007_retention.sql",
   ])
     await db.exec(await migration(name));
   await db.query(
@@ -500,6 +501,52 @@ test("validação rejeita opções, duplicatas e metadados incorretos", async ()
         [1, "SB-001"],
         [2, "SB-002"],
       ],
+    );
+  } finally {
+    await db.close();
+  }
+});
+
+test("retenção agenda a remoção de órfãos, sem apagar objetos por SQL", async () => {
+  const { db, as } = await setup();
+  try {
+    await db.query(
+      "insert into storage.objects(bucket_id,name,created_at) values('order-files',$1,now()-interval '3 days'),('order-files',$2,now())",
+      [path(GUEST), path(GUEST, "recent.png")],
+    );
+    await as(GUEST, true);
+    await assert.rejects(
+      db.query("select * from public.queue_expired_order_files()"),
+      /permission denied/,
+    );
+    await db.exec("reset role");
+    assert.deepEqual(
+      (
+        await db.query("select * from public.queue_expired_order_files()")
+      ).rows.map((row) => row.path),
+      [path(GUEST)],
+    );
+    assert.equal(
+      (await db.query("select count(*)::int total from storage.objects"))
+        .rows[0].total,
+      2,
+    );
+    assert.equal(
+      (
+        await db.query("select public.finish_order_file_purge($1) as n", [
+          [path(GUEST)],
+        ])
+      ).rows[0].n,
+      0,
+    );
+    await db.query("delete from storage.objects where name=$1", [path(GUEST)]);
+    assert.equal(
+      (
+        await db.query("select public.finish_order_file_purge($1) as n", [
+          [path(GUEST)],
+        ])
+      ).rows[0].n,
+      1,
     );
   } finally {
     await db.close();

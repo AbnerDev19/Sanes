@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { Check, X } from "lucide-react";
 import ClickSpark from "./components/ClickSpark";
 import Header from "./components/Header";
+import LegalPage from "./pages/LegalPage";
 import Footer from "./components/Footer";
 import ProductModal from "./components/ProductModal";
 import CartDrawer from "./components/CartDrawer";
@@ -262,7 +263,9 @@ export default function App() {
             </button>
           </div>
         )}
-        {route.name === "account" ? (
+        {route.name === "privacy" || route.name === "terms" ? (
+          <LegalPage privacy={route.name === "privacy"} />
+        ) : route.name === "account" ? (
           <div className="wrap account-page">
             <h1 id="buyer-account-title" tabIndex={-1}>
               Área do comprador

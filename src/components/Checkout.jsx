@@ -222,6 +222,18 @@ export default function Checkout({
           )}
         </div>
       )}
+      <p className="field-help">
+        Ao finalizar, você concorda com o uso dos dados e arquivos para atender
+        seu pedido de orçamento. Leia a{" "}
+        <a href="#/privacidade" target="_blank" rel="noopener noreferrer">
+          Política de Privacidade
+        </a>{" "}
+        e os{" "}
+        <a href="#/termos" target="_blank" rel="noopener noreferrer">
+          Termos de uso
+        </a>
+        .
+      </p>
       <button
         className="btn primary full"
         type="submit"
