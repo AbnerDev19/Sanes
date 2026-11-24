@@ -40,7 +40,7 @@ export function cleanFiles(files) {
       ? [
           {
             id: f.id,
-            name: text(f.name, 160) || "arquivo",
+            name: singleLine(f.name, 160) || "arquivo",
             type: f.type,
             size: f.size,
           },
@@ -161,69 +161,84 @@ export const fileSize = (bytes) =>
     ? `${(bytes / 1024 / 1024).toFixed(1).replace(".", ",")} MB`
     : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 
-/**
- * Mensagem do pedido no modelo da Sanes.
- * fileLinks: Map(idDoArquivo → link). Arquivos sem link são marcados para
- * envio manual na conversa.
- */
+export const singleLine = (value, max) =>
+  text(String(value ?? "").replace(/[\p{Cc}\u2028\u2029]/gu, " "), max);
+
+const messageText = (value, max) =>
+  singleLine(value, max).replace(
+    /(?:https?:\/\/|www\.)\S+/gi,
+    "[link omitido]",
+  );
+
 export function buildOrderMessage({
   items,
   customer,
   notes = "",
   orderNumber = null,
-  fileLinks = new Map(),
   adminLink = "",
   storedFiles = false,
 }) {
-  let manual = 0;
-  const lines = ["NOVO PEDIDO — SANES BRINDES"];
-  if (orderNumber) lines.push(`Pedido nº ${orderNumber}`);
-  lines.push(
-    "",
-    "CLIENTE:",
-    `Nome: ${text(customer.name, 100)}`,
-    `Empresa: ${text(customer.company, 120) || "Não informada"}`,
-    `Telefone: ${text(customer.phone, 30)}`,
-    `Cidade: ${[text(customer.city, 120), text(customer.state, 2)].filter(Boolean).join("/")}`,
+  const heading = [
+    "NOVO PEDIDO — SANES BRINDES",
+    orderNumber ? `Pedido nº ${orderNumber}` : "",
+    `Nome: ${messageText(customer.name, 75)}`,
+    `Telefone: ${messageText(customer.phone, 30)}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const fileCount = items.reduce(
+    (total, item) => total + (item.files?.length || 0),
+    0,
   );
-  if (customer.email) lines.push(`E-mail: ${text(customer.email, 150)}`);
-  lines.push("", "PRODUTOS SOLICITADOS:");
-  items.forEach((item, n) => {
-    lines.push(
-      "",
-      `Produto ${n + 1}: ${item.name} (${item.id})`,
-      `Quantidade: ${item.qty} unidades`,
-      `Cor: ${colorSummary(item.colors) || "A definir"}`,
-      `Modelo: ${item.variant || "Padrão"}`,
+  const suffix = [
+    items.some((item) => item.minimumUnconfirmed)
+      ? "Pedido mínimo a confirmar em parte do orçamento."
+      : "",
+    fileCount && !storedFiles
+      ? `Vou anexar ${fileCount} arquivo(s) nesta conversa.`
+      : "",
+    adminLink ? `Pedido completo: ${adminLink}` : "",
+  ].filter(Boolean);
+  const summary = [];
+  const message = (remaining, extra = "") =>
+    [
+      heading,
+      ...summary,
+      extra,
+      remaining
+        ? `+${remaining} itens${adminLink ? ", veja o pedido completo no painel" : " para detalhar no atendimento"}.`
+        : "",
+      ...suffix,
+    ]
+      .filter(Boolean)
+      .join("\n");
+  // Margem para o domínio, o número e a query na URL final.
+  const fits = (value) =>
+    encodeURIComponent(value.toWellFormed()).length <= 1450;
+  for (const item of items) {
+    const options = [colorSummary(item.colors), item.variant, item.method]
+      .filter(Boolean)
+      .join(" · ");
+    const files =
+      !storedFiles && item.files?.length
+        ? ` · ${item.files.map((f) => messageText(f.name, 35)).join(", ")} (vou anexar nesta conversa)`
+        : "";
+    summary.push(
+      `• ${messageText(item.name, 70)} (${messageText(item.id, 30)}): ${item.qty} un.${options ? ` · ${messageText(options, 80)}` : ""}${files}`,
     );
-    if (item.method) lines.push(`Personalização: ${item.method}`);
-    const files = item.files || [];
-    if (!files.length) lines.push("Logomarca: Não enviada");
-    files.forEach((f, i) => {
-      const link = fileLinks.get(f.id);
-      if (!link && !storedFiles) manual++;
-      const where = link
-        ? ` — ${link}`
-        : storedFiles
-          ? " (enviada pelo site)"
-          : " (vou anexar nesta conversa)";
-      lines.push(
-        `${files.length > 1 ? `Logomarca ${i + 1}` : "Logomarca"}: ${f.name}${where}`,
-      );
-    });
-    lines.push(`Observações: ${text(item.text, 1200) || "Nenhuma"}`);
-  });
-  lines.push("", "OBSERVAÇÕES GERAIS:", text(notes, 1500) || "Nenhuma");
-  if (manual)
-    lines.push(
-      "",
-      manual === 1
-        ? "Vou enviar o arquivo da logomarca nesta conversa."
-        : `Vou enviar os ${manual} arquivos de logomarca nesta conversa.`,
-    );
-  if (adminLink) lines.push("", `Pedido completo: ${adminLink}`);
-  lines.push("", "Aguardo retorno para dar continuidade ao atendimento!");
-  return lines.join("\n");
+    if (!fits(message(items.length - summary.length))) {
+      summary.pop();
+      break;
+    }
+  }
+  const extra =
+    !storedFiles && notes ? `Observações: ${messageText(notes, 160)}` : "";
+  const remaining = items.length - summary.length;
+  return (
+    fits(message(remaining, extra))
+      ? message(remaining, extra)
+      : message(remaining)
+  ).toWellFormed();
 }
 
 // Pedido salvo no banco → itens no formato da mensagem.

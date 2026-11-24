@@ -28,7 +28,7 @@ const message = async (page) =>
       .getAttribute("href")) || "",
   );
 
-test("visitante envia pedido com logomarca: arquivo vai ao armazenamento e o link vai na mensagem", async ({
+test("visitante envia pedido com logomarca: arquivo fica no painel vinculado ao pedido", async ({
   page,
 }) => {
   const state = await mockStore(page);
@@ -72,18 +72,14 @@ test("visitante envia pedido com logomarca: arquivo vai ao armazenamento e o lin
     "NOVO PEDIDO — SANES BRINDES",
     "Pedido nº 42",
     "Nome: Maria Souza",
-    "Cidade: Brasília/DF",
-    "Produto 1: Garrafa Térmica Munique (SB-001)",
-    "Quantidade: 30 unidades",
-    "Cor: Preto, Azul",
-    "Modelo: 750 ml",
-    "Logomarca: logo empresa.png — http://127.0.0.1:54321/storage/v1/object/sign/order-files/",
-    "Observações: Logo centralizada",
-    "OBSERVAÇÕES GERAIS:\nEntrega até dia 20",
+    "Telefone: (61) 99999-0000",
+    "Garrafa Térmica Munique (SB-001): 30 un.",
+    "Preto, Azul · 750 ml",
     "#/admin/pedidos/",
-    "Aguardo retorno para dar continuidade ao atendimento!",
   ])
     expect(text).toContain(part);
+  expect(text).not.toContain("/storage/v1/object/sign/");
+  expect(text).not.toContain("logo empresa.png");
   // Sessão anônima de envio não vira "Minha conta".
   await page.getByRole("button", { name: "Fechar", exact: true }).click();
   await expect(

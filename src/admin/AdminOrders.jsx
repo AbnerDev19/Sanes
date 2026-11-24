@@ -286,7 +286,7 @@ export function AdminOrderDetail({ id }) {
               className="btn primary full"
               href={`https://wa.me/55${digits}`}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
             >
               Conversar com o cliente <MessageCircle size={17} />
             </a>
@@ -353,17 +353,23 @@ export function AdminOrderDetail({ id }) {
                     </span>
                     {links[f.id] ? (
                       <>
+                        {f.mime_type !== "application/pdf" && (
+                          <a
+                            className="btn outline small"
+                            href={links[f.id]}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Ver <ExternalLink size={14} />
+                          </a>
+                        )}
                         <a
                           className="btn outline small"
-                          href={links[f.id]}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          Ver <ExternalLink size={14} />
-                        </a>
-                        <a
-                          className="btn outline small"
-                          href={`${links[f.id]}&download=${encodeURIComponent(f.file_name)}`}
+                          href={
+                            f.mime_type === "application/pdf"
+                              ? links[f.id]
+                              : `${links[f.id]}&download=${encodeURIComponent(f.file_name)}`
+                          }
                         >
                           Baixar <Download size={14} />
                         </a>

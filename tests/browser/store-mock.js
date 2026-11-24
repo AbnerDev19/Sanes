@@ -274,6 +274,10 @@ export async function mockStore(
 
     // Arquivos ----------------------------------------------------------------
     if (path.startsWith("/storage/v1/object/sign/order-files")) {
+      if (!body.paths)
+        return respond({
+          signedURL: `/object/sign/${path.split("/sign/")[1]}?token=signed-test`,
+        });
       return respond(
         body.paths.map((p) => ({
           path: p,

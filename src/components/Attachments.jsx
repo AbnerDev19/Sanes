@@ -142,7 +142,7 @@ export default function AttachmentPicker({
       )}
       <small className="field-help">
         {remoteUpload
-          ? "Os arquivos são enviados com segurança ao finalizar o pedido, e o link vai na mensagem para a Sanes."
+          ? "Os arquivos são enviados com segurança ao finalizar o pedido, e ficam disponíveis no painel da Sanes."
           : "Ao finalizar, o WhatsApp abre com o pedido; anexe os arquivos na conversa."}
       </small>
     </div>
