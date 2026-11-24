@@ -84,6 +84,7 @@ export default function App() {
     setCart,
     profile,
     staff,
+    owner,
     staffChecked,
     syncError,
     retrySync,
@@ -216,6 +217,7 @@ export default function App() {
           session={session}
           authReady={authReady}
           staff={staff}
+          owner={owner}
           staffChecked={staffChecked}
           recovery={recovery}
           onRecovered={() => setRecovery(false)}

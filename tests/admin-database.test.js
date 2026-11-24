@@ -33,6 +33,7 @@ async function setup() {
     "202611170002_order_contact_validation.sql",
     "202611230003_catalog_admin_uploads.sql",
     "202611230004_admin_ordering.sql",
+    "202611240005_security.sql",
   ])
     await db.exec(await migration(name));
   await db.query(
@@ -309,4 +310,98 @@ test("equipe reordena produtos e categorias; visitante não", async () => {
     1,
   );
   await db.close();
+});
+
+test("restrições de visitantes, proprietário, auditoria e limite global", async () => {
+  const { db, as } = await setup();
+  try {
+    await db.query("insert into public.carts(user_id) values($1)", [GUEST]);
+    await db.query("insert into public.profiles(id) values($1)", [GUEST]);
+    await db.query("update auth.users set is_anonymous=false where id=$1", [
+      OTHER,
+    ]);
+    await db.query("insert into public.store_members values($1,'staff')", [
+      OTHER,
+    ]);
+    await db.exec("update public.store_settings set max_orders_per_hour=1");
+    await as(GUEST, true);
+    assert.equal((await db.query("select * from public.carts")).rows.length, 0);
+    assert.equal(
+      (await db.query("select * from public.profiles")).rows.length,
+      0,
+    );
+    await assert.rejects(
+      db.query("insert into public.carts(user_id) values($1)", [GUEST]),
+      /row-level security/,
+    );
+    assert.equal(
+      (await db.query("select * from public.audit_log")).rows.length,
+      0,
+    );
+    assert.equal(
+      (await db.query("select * from public.categories")).rows.length,
+      6,
+    );
+    const args = [
+      KEY,
+      JSON.stringify([{ id: "SB-002", qty: 50 }]),
+      JSON.stringify(customer),
+    ];
+    await db.query("select public.submit_order($1,$2,$3)", args);
+    await as(OTHER);
+    await assert.rejects(
+      db.query("select public.submit_order($1,$2,$3)", args),
+      /loja recebeu muitos/,
+    );
+    assert.equal(
+      (
+        await db.query(
+          "update public.store_settings set whatsapp='5561999990000' returning id",
+        )
+      ).rows.length,
+      0,
+    );
+    assert.equal(
+      (
+        await db.query(
+          "delete from public.categories where name='Kits e presentes' returning name",
+        )
+      ).rows.length,
+      0,
+    );
+    assert.equal(
+      (
+        await db.query(
+          "update public.products set featured=true where id='SB-002' returning id",
+        )
+      ).rows.length,
+      1,
+    );
+    assert.ok(
+      (await db.query("select * from public.audit_log")).rows.length > 0,
+    );
+    await assert.rejects(
+      db.query("delete from public.audit_log"),
+      /permission denied/,
+    );
+    await as(OWNER);
+    assert.equal(
+      (
+        await db.query(
+          "update public.store_settings set whatsapp='5561999990000' returning id",
+        )
+      ).rows.length,
+      1,
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select to_regprocedure('public.place_order(uuid,jsonb,jsonb)') as rpc",
+        )
+      ).rows[0].rpc,
+      null,
+    );
+  } finally {
+    await db.close();
+  }
 });

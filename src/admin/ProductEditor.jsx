@@ -101,7 +101,7 @@ function TagInput({ label, help, values, onChange, placeholder }) {
   );
 }
 
-export default function ProductEditor({ id, onSaved }) {
+export default function ProductEditor({ id, onSaved, owner }) {
   const [created, setCreated] = useState(false);
   const isNew = id === "novo" && !created;
   const [form, setForm] = useState(BLANK),
@@ -472,7 +472,8 @@ export default function ProductEditor({ id, onSaved }) {
           <button className="btn primary" disabled={saving || uploading}>
             {saving ? "Salvando…" : "Salvar produto"}
           </button>
-          {!isNew &&
+          {owner &&
+            !isNew &&
             (confirmDelete ? (
               <span className="confirm-delete">
                 Excluir definitivamente?

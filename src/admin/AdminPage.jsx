@@ -110,6 +110,7 @@ export default function AdminPage({
   session,
   authReady,
   staff,
+  owner,
   staffChecked,
   recovery,
   onRecovered,
@@ -175,13 +176,19 @@ export default function AdminPage({
         key={id}
         id={decodeURIComponent(id)}
         onSaved={onCatalogChange}
+        owner={owner}
       />
     ) : (
       <AdminProducts onChange={onCatalogChange} />
     );
   else if (section === "categorias")
-    content = <AdminCategories onChange={onCatalogChange} />;
-  else if (section === "configuracoes") content = <AdminSettings />;
+    content = <AdminCategories onChange={onCatalogChange} owner={owner} />;
+  else if (section === "configuracoes")
+    content = owner ? (
+      <AdminSettings />
+    ) : (
+      <p role="alert">Somente o proprietário pode alterar as configurações.</p>
+    );
   else
     content = (
       <div className="admin-card">
@@ -206,16 +213,18 @@ export default function AdminPage({
           </div>
         </div>
         <nav className="admin-tabs" aria-label="Seções do painel">
-          {TABS.map(([href, label, Icon]) => (
-            <a
-              key={href}
-              href={`#/admin${href}`}
-              aria-current={`/${section}` === href ? "page" : undefined}
-            >
-              <Icon size={17} aria-hidden="true" />
-              {label}
-            </a>
-          ))}
+          {TABS.filter(([href]) => owner || href !== "/configuracoes").map(
+            ([href, label, Icon]) => (
+              <a
+                key={href}
+                href={`#/admin${href}`}
+                aria-current={`/${section}` === href ? "page" : undefined}
+              >
+                <Icon size={17} aria-hidden="true" />
+                {label}
+              </a>
+            ),
+          )}
         </nav>
       </header>
       <main className="admin-main">{content}</main>

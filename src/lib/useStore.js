@@ -33,7 +33,7 @@ export default function useStore(products) {
     }),
     [syncError, setSyncError] = useState(""),
     [cartOwner, setCartOwner] = useState(null),
-    [staff, setStaff] = useState(false),
+    [storeRole, setStoreRole] = useState(null),
     [staffChecked, setStaffChecked] = useState(false);
   const guestAtLogin = useRef([]),
     uid = session?.user.id;
@@ -68,7 +68,7 @@ export default function useStore(products) {
     let active = true;
     setCartOwner(null);
     setSyncError("");
-    setStaff(false);
+    setStoreRole(null);
     setStaffChecked(false);
     if (!uid) {
       const guest = safeCart("sanes-cart-v1", products);
@@ -105,7 +105,7 @@ export default function useStore(products) {
             city: "",
           },
         );
-        setStaff(Boolean(member.data));
+        setStoreRole(member.data?.role || null);
         setStaffChecked(true);
         setCartOwner(uid);
         // Consume guest cart only after successful hydration. An account switch cannot
@@ -173,7 +173,8 @@ export default function useStore(products) {
     cart: visibleCart,
     setCart,
     profile,
-    staff,
+    staff: Boolean(storeRole),
+    owner: storeRole === "owner",
     staffChecked,
     syncError,
     retrySync: () => setRevision((n) => n + 1),
