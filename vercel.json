@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run build:vercel",
+  "outputDirectory": "dist",
+  "rewrites": [
+    { "source": "/produto/:id", "destination": "/produto/:id/index.html" },
+    { "source": "/admin/:path*", "destination": "/index.html" },
+    { "source": "/conta", "destination": "/index.html" },
+    { "source": "/privacidade", "destination": "/index.html" },
+    { "source": "/termos", "destination": "/index.html" }
+  ]
+}

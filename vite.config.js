@@ -13,6 +13,16 @@ export default defineConfig(({ mode, command }) => {
       env.VITE_SUPABASE_ANON_KEY,
   );
   const publicEnv = { ...env, ...process.env };
+  if (mode === "vercel") {
+    const site = new URL(
+      canonicalSite(
+        publicEnv.VERCEL_SITE_URL || "https://sanes-bay.vercel.app/",
+      ),
+    );
+    if (site.pathname !== "/")
+      throw new Error("VERCEL_SITE_URL deve apontar para a raiz do domínio.");
+    publicEnv.VITE_SITE_URL = site.href;
+  }
   const optionalKeys = [
     "VITE_SUPABASE_URL",
     "VITE_SUPABASE_PUBLISHABLE_KEY",
@@ -31,7 +41,7 @@ export default defineConfig(({ mode, command }) => {
         JSON.stringify(publicEnv[key] || ""),
       ]),
     ),
-    plugins: [seoPlugin({ ...env, ...process.env }, projectRoot)],
+    plugins: [seoPlugin(publicEnv, projectRoot)],
     root: "app",
     envDir: projectRoot,
     resolve: {
