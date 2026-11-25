@@ -1,6 +1,8 @@
 name: Build and deploy Pages
 on:
   push:
+    branches-ignore:
+      - "dependabot/**"
   pull_request:
   workflow_dispatch:
 permissions:
@@ -30,8 +32,12 @@ jobs:
         if: vars.PAGES_ACTIONS_ENABLED != 'true'
         run: |
           npm run build:pages
-          git diff --exit-code -- index.html assets/ favicon.svg robots.txt sitemap.xml 404.html produto/
-          test -z "$(git ls-files --others --exclude-standard -- index.html assets/ 404.html produto/)"
+          changes=$(git status --porcelain --untracked-files=all -- index.html assets/ favicon.svg robots.txt sitemap.xml 404.html produto/ .nojekyll)
+          if [ -n "$changes" ]; then
+            echo '::error::Os arquivos do Pages legado precisam ser atualizados. Rode npm ci e npm run build:pages e inclua os arquivos gerados no commit.'
+            printf '%s\n' "$changes"
+            exit 1
+          fi
       - name: Browser failures
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
