@@ -14,14 +14,26 @@ test("registration requires email confirmation and recovery remains available", 
   await page.getByLabel("Seu nome", { exact: true }).fill("Cliente");
   await page.getByLabel("E-mail da conta").fill("cliente@example.com");
   await page.getByLabel("Senha", { exact: true }).fill("password-test");
+  const signup = page.waitForRequest(
+    (request) => new URL(request.url()).pathname === "/auth/v1/signup",
+  );
   await page.getByRole("button", { name: "Criar conta", exact: true }).click();
+  expect(new URL((await signup).url()).searchParams.get("redirect_to")).toBe(
+    "http://127.0.0.1:4175/conta",
+  );
   await expect(page.getByRole("status")).toContainText("confirme o cadastro");
   await page
     .getByRole("button", { name: "Esqueci a senha", exact: true })
     .click();
+  const recovery = page.waitForRequest(
+    (request) => new URL(request.url()).pathname === "/auth/v1/recover",
+  );
   await page
     .getByRole("button", { name: "Enviar instruções", exact: true })
     .click();
+  expect(new URL((await recovery).url()).searchParams.get("redirect_to")).toBe(
+    "http://127.0.0.1:4175/conta",
+  );
   await expect(page.getByRole("status")).toContainText("Se houver uma conta");
 });
 test("password recovery callback opens the password-change screen", async ({
@@ -75,4 +87,18 @@ test("rodapé dá acesso à conta do comprador e ao painel", async ({ page }) =>
   await expect(
     page.getByRole("heading", { name: "Acesso restrito" }),
   ).toBeVisible();
+});
+
+test("recuperação administrativa retorna ao painel", async ({ page }) => {
+  await mockStore(page);
+  await page.goto("/admin");
+  await page.getByLabel("E-mail", { exact: true }).fill("junior@example.com");
+  const recovery = page.waitForRequest(
+    (request) => new URL(request.url()).pathname === "/auth/v1/recover",
+  );
+  await page.getByRole("button", { name: "Esqueci minha senha" }).click();
+  expect(new URL((await recovery).url()).searchParams.get("redirect_to")).toBe(
+    "http://127.0.0.1:4175/admin",
+  );
+  await expect(page.getByRole("status")).toContainText("receberá um link");
 });

@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import Brand from "../components/Brand";
 import AuthPanel from "../components/AuthPanel";
-import { supabase } from "../lib/supabase";
+import { siteUrl, supabase } from "../lib/supabase";
 import AdminOrders, { AdminOrderDetail } from "./AdminOrders";
 import AdminProducts from "./AdminProducts";
 import ProductEditor from "./ProductEditor";
@@ -73,7 +73,7 @@ function AdminLogin() {
       const { error: failure } = await supabase.auth.resetPasswordForEmail(
         email.trim(),
         {
-          redirectTo: new URL(appPath(), location.origin).href,
+          redirectTo: siteUrl("admin"),
           captchaToken: captcha.token || undefined,
         },
       );

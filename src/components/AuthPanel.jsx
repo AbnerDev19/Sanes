@@ -49,7 +49,7 @@ export default function AuthPanel({ onClose, recovery = false, onRecovered }) {
           password,
           options: {
             data: { name: name.trim() },
-            emailRedirectTo: siteUrl(),
+            emailRedirectTo: siteUrl("conta"),
             captchaToken: captcha.token || undefined,
           },
         });
@@ -67,7 +67,10 @@ export default function AuthPanel({ onClose, recovery = false, onRecovered }) {
       } else if (mode === "reset") {
         const { error } = await supabase.auth.resetPasswordForEmail(
           email.trim(),
-          { redirectTo: siteUrl(), captchaToken: captcha.token || undefined },
+          {
+            redirectTo: siteUrl("conta"),
+            captchaToken: captcha.token || undefined,
+          },
         );
         if (error)
           throw new Error(
