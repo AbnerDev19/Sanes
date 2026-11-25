@@ -16,7 +16,8 @@
     "dev:lan": "vite --host 0.0.0.0",
     "catalog:audit": "node scripts/audit-catalog.mjs",
     "lint": "eslint src",
-    "check:production": "node scripts/check-production.mjs"
+    "check:production": "node scripts/check-production.mjs",
+    "build:vercel": "vite build --mode vercel"
   },
   "dependencies": {
     "@fontsource-variable/dm-sans": "^5.3.0",
