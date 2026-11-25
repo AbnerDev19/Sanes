@@ -26,7 +26,7 @@ alter table public.products validate constraint products_element_format;
 
 ## 2. Auth, CAPTCHA e MFA
 
-1. Em **Authentication → Sign In / Providers**, mantenha **Email**, **Confirm email** e **Allow anonymous sign-ins** ligados. Em **URL Configuration**, use a raiz pública exata, por exemplo `https://abnerdev19.github.io/Sanes/`, tanto em **Site URL** quanto na lista **Redirect URLs**. Confirme cadastro e recuperação de senha por e-mail no ambiente publicado. Em **Authentication → Emails**, configure SMTP com um remetente autorizado para produção.
+1. Em **Authentication → Sign In / Providers**, mantenha **Email**, **Confirm email** e **Allow anonymous sign-ins** ligados. Em **URL Configuration**, use em **Site URL** o endereço publicado principal, por exemplo `https://sanes-bay.vercel.app/`. Em **Redirect URLs**, adicione a raiz e as rotas completas **/conta** e **/admin**, pois os links de confirmação e recuperação retornam diretamente à área correspondente. Se também publicar pelo Pages, inclua `https://abnerdev19.github.io/Sanes/`, `https://abnerdev19.github.io/Sanes/conta` e `https://abnerdev19.github.io/Sanes/admin`. Confirme cadastro e recuperação de senha por e-mail no ambiente publicado. Em **Authentication → Emails**, configure SMTP com um remetente autorizado para produção.
 2. Em **Authentication → Attack Protection**, cadastre o secret de um widget **Cloudflare Turnstile** permitido no domínio da loja e configure a chave pública em `VITE_CAPTCHA_SITE_KEY`. O site usa o widget na primeira sessão de visitante, no cadastro, no login por e-mail e na solicitação de recuperação de senha. Teste todos esses fluxos em homologação antes de ativar a proteção em produção. Para hCaptcha, integre o widget correspondente antes de ativar no site.
 3. Em **Authentication → Users**, crie a conta de equipe, confirme seu e-mail e atribua o papel no SQL Editor. Substitua o exemplo pelo e-mail verificado.
 
@@ -46,6 +46,10 @@ update public.store_settings set staff_mfa_required = true where id;
 ```
 
 Saia e entre no painel. Cadastre o QR code num aplicativo autenticador e confirme o código de seis dígitos. Verifique que a mesma edição falha numa sessão `aal1` e funciona após obter `aal2`. Mantenha um administrador do projeto disponível para recuperar acesso. Se houver bloqueio operacional, o responsável pelo projeto pode voltar o campo para `false` temporariamente, registrar o motivo e reativar depois.
+
+### Login na Vercel
+
+Em **Settings → Environment Variables** do projeto Sanes na Vercel, cadastre `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` no ambiente **Production**. Use a chave pública do mesmo projeto configurado em Auth. Faça um novo deploy depois de salvar. Confira as rotas **/conta** e **/admin**, a confirmação e a recuperação no domínio público. Habilite o backend da loja após preparar o catálogo e aplicar as migrações pendentes, pois as mesmas variáveis também conectam os fluxos de catálogo e pedido.
 
 ## 3. Importar catálogo
 

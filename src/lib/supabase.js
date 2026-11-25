@@ -27,7 +27,8 @@ export const supabase = supabaseConfigured
       },
     })
   : null;
-export const siteUrl = () => new URL(appPath(), window.location.origin).href;
+export const siteUrl = (path = "") =>
+  new URL(appPath(path), window.location.origin).href;
 export function mapProduct(p) {
   return {
     id: p.id,
